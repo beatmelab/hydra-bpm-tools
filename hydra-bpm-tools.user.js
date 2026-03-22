@@ -1,8 +1,14 @@
 // ==UserScript==
-// @name         Hydra BPM tools
-// @namespace    https://hydra.ojack.xyz/
+// @name         Hydra BPM Tools
+// @namespace    https://github.com/beatmelab/hydra-bpm-tools
 // @version      1.6
-// @description  Adds small HUD with VJ tools (BPM, beat visualizer, resync, hush toggle, tap tempo, rate multiplier). Shortcuts: ctrl+shift+R = resync // ctrl+shift+B = hush/unhush // ctrl+shift+T = tap tempo // ctrl+shift+arrowup/arrowdown = change base bpm // ctrl+shift+arrowleft/arrowright = halve/double effective bpm
+// @description  Adds small HUD with VJ tools (BPM, beat visualizer, resync, tap tempo, rate multiplier and hush toggle).
+// @author       @alt234vj | @beatmelab | https://www.beatmelab.com
+// @license      MIT
+// @homepageURL  https://github.com/beatmelab/hydra-bpm-tools
+// @supportURL   https://github.com/beatmelab/hydra-bpm-tools/issues
+// @downloadURL  https://raw.githubusercontent.com/beatmelab/hydra-bpm-tools/main/hydra-bpm-tools.user.js
+// @updateURL    https://raw.githubusercontent.com/beatmelab/hydra-bpm-tools/main/hydra-bpm-tools.user.js
 // @match        https://hydra.ojack.xyz/*
 // @grant        none
 // @run-at       document-end
