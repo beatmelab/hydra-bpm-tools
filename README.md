@@ -116,9 +116,9 @@ The script resets to the following defaults:
 
 ## Installation
 
-### 1. Install an browser extension that can run custom user scripts
+### 1. Install a browser extension that can run custom user scripts
 
-Before installing Hydra BPM Tools, you need a extension that can run user scripts.
+Before installing Hydra BPM Tools, you need an extension that can run user scripts.
 
 Common options include:
 
@@ -127,19 +127,23 @@ Common options include:
 
 Availability depends on your browser and operating system. Most desktop browsers are supported, while mobile support is more limited.
 
-### 2. Create a new userscript
+### 2. Install the script
 
-Open your userscript manager and create a new script.
+Click the link below to install the latest version of the script:
 
-### 3. Paste the script
+[![Install Hydra BPM Tools](https://img.shields.io/badge/Install-Hydra%20BPM%20Tools-blue)](https://raw.githubusercontent.com/beatmelab/hydra-bpm-tools/main/hydra-bpm-tools.user.js)
+
+If your userscript manager is installed correctly, it should detect the script automatically and open the installation screen.
+
+### 3. Manual installation (alternative)
+
+If automatic installation does not work, open your userscript manager and create a new script.
 
 Replace the default content with the contents of:
 
 `hydra-bpm-tools.user.js`
 
-### 4. Save
-
-Save the script and open:
+Then save the script and open:
 
 `https://hydra.ojack.xyz/`
 
