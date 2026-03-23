@@ -116,12 +116,16 @@ The script resets to the following defaults:
 
 ## Installation
 
-### 1. Install a userscript manager
+### 1. Install an browser extension that can run custom user scripts
 
-Use one of these browser extensions:
+Before installing Hydra BPM Tools, you need a extension that can run user scripts.
+
+Common options include:
 
 - Tampermonkey
 - Violentmonkey
+
+Availability depends on your browser and operating system. Most desktop browsers are supported, while mobile support is more limited.
 
 ### 2. Create a new userscript
 
