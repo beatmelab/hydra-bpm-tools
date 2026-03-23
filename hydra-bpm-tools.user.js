@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Hydra BPM Tools
 // @namespace    https://github.com/beatmelab/hydra-bpm-tools
-// @version      1.6
+// @version      1.7
 // @description  Adds small HUD with VJ tools (BPM, beat visualizer, resync, tap tempo, rate multiplier and hush toggle).
 // @author       @alt234vj | @beatmelab | https://www.beatmelab.com
 // @license      MIT
@@ -55,7 +55,9 @@
     viewportPadding: 8,
 
     tapTimeoutMs: 2000,
-    tapHistorySize: 6
+    tapHistorySize: 6,
+    tapApplyAlpha: 0.25,
+    tapMaxDeltaBpm: 3
   };
 
   let hud = null;
@@ -203,6 +205,18 @@
     }
 
     return `/${1 / rateMultiplier}`;
+  }
+
+  function median(values) {
+    if (!values.length) return null;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+
+    if (sorted.length % 2 === 0) {
+      return (sorted[mid - 1] + sorted[mid]) / 2;
+    }
+
+    return sorted[mid];
   }
 
   function loadHudPosition() {
@@ -538,11 +552,20 @@
 
     if (!intervals.length) return;
 
-    const averageInterval = intervals.reduce((sum, value) => sum + value, 0) / intervals.length;
-    if (averageInterval <= 0) return;
+    const medianInterval = median(intervals);
+    if (!medianInterval || medianInterval <= 0) return;
 
-    const tappedBpm = 60000 / averageInterval;
-    setBaseBpm(tappedBpm);
+    const rawTappedBpm = 60000 / medianInterval;
+    const currentBpm = getCurrentBaseBpm();
+    const smoothedBpm =
+      currentBpm + (rawTappedBpm - currentBpm) * CONFIG.tapApplyAlpha;
+    const delta = clamp(
+      smoothedBpm - currentBpm,
+      -CONFIG.tapMaxDeltaBpm,
+      CONFIG.tapMaxDeltaBpm
+    );
+
+    setBaseBpm(currentBpm + delta);
   }
 
   function renderBeatVisualizer() {
