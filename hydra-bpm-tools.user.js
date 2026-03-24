@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Hydra BPM Tools
 // @namespace    https://github.com/beatmelab/hydra-bpm-tools
-// @version      1.7
+// @version      1.8
 // @description  Adds small HUD with VJ tools (BPM, beat visualizer, resync, tap tempo, rate multiplier and hush toggle).
 // @author       @alt234vj | @beatmelab | https://www.beatmelab.com
 // @license      MIT
@@ -550,15 +550,29 @@
       intervals.push(tapTimes[i] - tapTimes[i - 1]);
     }
 
-    if (!intervals.length) return;
+    if (intervals.length < 2) return;
 
-    const medianInterval = median(intervals);
-    if (!medianInterval || medianInterval <= 0) return;
+    const candidateInterval = median(intervals);
+    if (!candidateInterval || candidateInterval <= 0) return;
 
-    const rawTappedBpm = 60000 / medianInterval;
+    const candidateBpm = 60000 / candidateInterval;
     const currentBpm = getCurrentBaseBpm();
+
+    const maxInterval = Math.max(...intervals);
+    const minInterval = Math.min(...intervals);
+    const spreadMs = maxInterval - minInterval;
+    const consistent = spreadMs < 60;
+
+    const difference = Math.abs(candidateBpm - currentBpm);
+
+    if (consistent && intervals.length >= 3 && difference >= 8) {
+      setBaseBpm(candidateBpm);
+      return;
+    }
+
     const smoothedBpm =
-      currentBpm + (rawTappedBpm - currentBpm) * CONFIG.tapApplyAlpha;
+      currentBpm + (candidateBpm - currentBpm) * CONFIG.tapApplyAlpha;
+
     const delta = clamp(
       smoothedBpm - currentBpm,
       -CONFIG.tapMaxDeltaBpm,
