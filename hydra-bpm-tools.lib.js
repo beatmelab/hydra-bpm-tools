@@ -53,6 +53,9 @@ Original license: GPL-3.0
     hudStorageKey: "hydra-bpmtools-hud-pos",
     hudVisibleKey: "hydra-bpmtools-hud-visible",
 
+    bpmStorageKey: "hydra-bpmtools-bpm",
+    rateStorageKey: "hydra-bpmtools-rate",
+
     defaultHudX: 12,
     defaultHudY: 12,
     viewportPadding: 8,
@@ -77,8 +80,46 @@ Original license: GPL-3.0
   let beatLoopStarted = false;
   let tapTimes = [];
 
-  let baseBpm = CONFIG.defaultBpm;
-  let rateMultiplier = CONFIG.defaultRateMultiplier;
+  function loadStoredBpm() {
+    try {
+      const raw = sessionStorage.getItem(CONFIG.bpmStorageKey);
+      if (raw !== null) {
+        const val = parseInt(raw, 10);
+        if (Number.isFinite(val) && val >= CONFIG.minBpm && val <= CONFIG.maxBpm) {
+          return val;
+        }
+      }
+    } catch (e) {}
+    return CONFIG.defaultBpm;
+  }
+
+  function loadStoredRate() {
+    try {
+      const raw = sessionStorage.getItem(CONFIG.rateStorageKey);
+      if (raw !== null) {
+        const val = parseFloat(raw);
+        if (Number.isFinite(val) && val >= CONFIG.minRateMultiplier && val <= CONFIG.maxRateMultiplier) {
+          return roundRateMultiplier(val);
+        }
+      }
+    } catch (e) {}
+    return CONFIG.defaultRateMultiplier;
+  }
+
+  function saveStoredBpm(value) {
+    try {
+      sessionStorage.setItem(CONFIG.bpmStorageKey, String(value));
+    } catch (e) {}
+  }
+
+  function saveStoredRate(value) {
+    try {
+      sessionStorage.setItem(CONFIG.rateStorageKey, String(value));
+    } catch (e) {}
+  }
+
+  let baseBpm = loadStoredBpm();
+  let rateMultiplier = loadStoredRate();
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
@@ -519,6 +560,7 @@ Original license: GPL-3.0
 
   function setBaseBpm(value) {
     baseBpm = clamp(Math.round(value), CONFIG.minBpm, CONFIG.maxBpm);
+    saveStoredBpm(baseBpm);
     applyEffectiveBpm();
     renderHud();
     console.log("[Hydra BPM Tools] bpm base =", baseBpm, "| effective =", window.bpm);
@@ -530,6 +572,7 @@ Original license: GPL-3.0
       CONFIG.minRateMultiplier,
       CONFIG.maxRateMultiplier
     );
+    saveStoredRate(rateMultiplier);
     applyEffectiveBpm();
     renderHud();
     flashBpmText();
