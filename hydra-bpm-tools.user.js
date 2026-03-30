@@ -4,7 +4,7 @@
 // @version      1.8
 // @description  Adds small HUD with VJ tools (BPM, beat visualizer, resync, tap tempo, rate multiplier and hush toggle).
 // @author       @alt234vj | @beatmelab | https://www.beatmelab.com
-// @license      MIT
+// @license      GPL-3.0
 // @homepageURL  https://github.com/beatmelab/hydra-bpm-tools
 // @supportURL   https://github.com/beatmelab/hydra-bpm-tools/issues
 // @downloadURL  https://raw.githubusercontent.com/beatmelab/hydra-bpm-tools/main/hydra-bpm-tools.user.js
@@ -13,6 +13,12 @@
 // @grant        none
 // @run-at       document-end
 // ==/UserScript==
+
+/*
+This userscript includes adapted functionality from `geikha/hyper-hydra`.
+Source: https://github.com/geikha/hyper-hydra
+Original license: GPL-3.0
+*/
 
 (function () {
   "use strict";
@@ -217,6 +223,88 @@
     }
 
     return sorted[mid];
+  }
+
+  // Beat helper API adapted from `hydra-tap.js` in `geikha/hyper-hydra`.
+  
+  function getHydraBpmValue() {
+    const bpm = Number(window.bpm);
+    if (Number.isFinite(bpm) && bpm > 0) return bpm;
+    return getCurrentEffectiveBpm();
+  }
+
+  function getNormalizedBeatProgress(divisor = 1) {
+    const time = getHydraTime();
+    const bpm = getHydraBpmValue();
+
+    if (!Number.isFinite(time) || !Number.isFinite(bpm) || bpm <= 0) {
+      return 0;
+    }
+
+    const beatLength = 60 / bpm;
+    const cycleLength = beatLength * divisor;
+
+    if (!Number.isFinite(cycleLength) || cycleLength <= 0) {
+      return 0;
+    }
+
+    return ((time % cycleLength) + cycleLength) % cycleLength / cycleLength;
+  }
+
+  function applyRangeToFunction(fn) {
+    fn.range = (min = 0, max = 1) => {
+      const ranged = () => fn() * (max - min) + min;
+      return applyCurveToFunction(applyRangeToFunction(ranged));
+    };
+    return fn;
+  }
+
+  function applyCurveToFunction(fn) {
+    fn.curve = (q = 1) => {
+      const curved = () => {
+        const value = clamp(fn(), 0, 1);
+        return q > 0
+          ? Math.pow(value, q)
+          : 1 - Math.pow(1 - value, -q);
+      };
+      return applyRangeToFunction(applyCurveToFunction(curved));
+    };
+    return fn;
+  }
+
+  function createBeatFunction(fn) {
+    return applyCurveToFunction(applyRangeToFunction(fn));
+  }
+
+  function beatsRampDown(divisor = 1) {
+    return getNormalizedBeatProgress(divisor);
+  }
+
+  function beatsRampUp(divisor = 1) {
+    return 1 - getNormalizedBeatProgress(divisor);
+  }
+
+  function beatsTriRampDown(divisor = 1) {
+    const progress = getNormalizedBeatProgress(divisor * 2);
+    return progress >= 0.5
+      ? getNormalizedBeatProgress(divisor)
+      : 1 - getNormalizedBeatProgress(divisor);
+  }
+
+  function beatsTriRampUp(divisor = 1) {
+    const progress = getNormalizedBeatProgress(divisor * 2);
+    return progress >= 0.5
+      ? 1 - getNormalizedBeatProgress(divisor)
+      : getNormalizedBeatProgress(divisor);
+  }
+
+  function installBeatHelpers() {
+    window.range = (fn) => applyRangeToFunction(fn);
+    window.curve = (fn) => applyCurveToFunction(fn);
+    window.beats = (n = 1) => createBeatFunction(() => beatsRampDown(n));
+    window.beats_ = (n = 1) => createBeatFunction(() => beatsRampUp(n));
+    window.beatsTri = (n = 1) => createBeatFunction(() => beatsTriRampDown(n));
+    window.beatsTri_ = (n = 1) => createBeatFunction(() => beatsTriRampUp(n));
   }
 
   function loadHudPosition() {
@@ -874,6 +962,7 @@
   }
 
   function install() {
+    installBeatHelpers();
     ensureHud();
     renderHud();
     applyHudVisibility();

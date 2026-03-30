@@ -4,7 +4,7 @@
 // @version      1.0
 // @description  Forces Hydra code area to 50% of the window width, helping prevent code from overlapping o1 and o3.
 // @author       @alt234vj | @beatmelab | https://www.beatmelab.com
-// @license      MIT
+// @license      GPL-3.0
 // @homepageURL  https://github.com/beatmelab/hydra-bpm-tools
 // @supportURL   https://github.com/beatmelab/hydra-bpm-tools/issues
 // @downloadURL  https://raw.githubusercontent.com/beatmelab/hydra-bpm-tools/main/extras/hydra-editor-width-50.user.js

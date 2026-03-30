@@ -13,6 +13,7 @@ A userscript for [Hydra](https://hydra.ojack.xyz/) that adds a minimal HUD for v
 - BPM rate multiplier
 - Hush / unhush toggle
 - Draggable HUD
+- Beat helper functions: `beats`, `beats_`, `beatsTri`, `beatsTri_`, `curve`, `range`
 
 ## Shortcuts
 
@@ -85,17 +86,34 @@ This is useful for:
 - Realigning loops
 - Restarting time-based motion
 
-### 3. Hush / unhush hides the current output
-
-The script uses Hydra’s `hush()` behavior as a quick way to blank the current visual output, similar to the global B button (bypass output) in Resolume Arena/Avenue. This is intended as a quick blank / restore control during live visual work.
-
-### 4. Tempo controls
+### 3. Tempo controls
 
 - `Ctrl + Shift + ↑` / `Ctrl + Shift + ↓`: Increase or decrease the base BPM by 1.
 
 - `Ctrl + Shift + T`: Tap tempo calculates a BPM from repeated taps and updates the **base BPM**, similar to the **TAP** button in Resolume Arena/Avenue.
 
 - `Ctrl + Shift + ←` / `Ctrl + Shift + →`: These shortcuts do not change the displayed base BPM value. Instead, they change the **rate multiplier** applied to the effective BPM sent to Hydra. The multiplier appears in red next to the BPM value.
+
+### 4. Envelopes
+
+The envelope helper API in this section is adapted from [`hydra-tap.js`](https://github.com/geikha/hyper-hydra/blob/main/hydra-tap.js) in `geikha/hyper-hydra`, keeping the original function names where possible for familiarity and compatibility.
+
+- `beats(n=1)`: A linear ramp from 1 down to 0 every n beats
+- `beats_(n=1)`: A linear ramp from 0 up to 1 every n beats
+- `beatsTri(n=1)`: Goes from 1 to 0 on n beats, and then back to 1 in the same time, creating a triangle wave.
+- `beatsTri_(n=1)`: Same as above but inverted.
+
+#### Curve
+
+You can set the curve of a beat envelope by calling `.curve(q)` on it. Positive values will ease in and negative values will ease out. For example, `beats().curve(3)` would be cubic easing in.
+
+#### Range
+
+You can also set the range for an envelope or a curved envelope by calling `.range(min=0, max=1)` on it. For example: `osc().scale(beatsTri(2).curve(2).range(1,2))`.
+
+### 5. Hush / unhush hides the current output
+
+The script uses Hydra’s `hush()` behavior as a quick way to blank the current visual output, similar to the global B button (bypass output) in Resolume Arena/Avenue. This is intended as a quick blank / restore control during live visual work.
 
 ## Persistence
 
@@ -157,6 +175,13 @@ This script is designed to stay lightweight and interfere with Hydra’s native 
 - [@beatmelab](https://www.instagram.com/beatmelab)
 - https://www.beatmelab.com
 
+
+## Attribution
+
+This project includes adapted functionality from [`geikha/hyper-hydra`](https://github.com/geikha/hyper-hydra), including parts of the envelope helper API derived from `hydra-tap.js`.
+
+Original upstream license: GPL-3.0.
+
 ## License
 
-MIT
+GPL-3.0
