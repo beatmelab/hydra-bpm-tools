@@ -12,7 +12,7 @@ Just paste this code at the start of Hydra editor:
 await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.0.0/extras/hydra-autoload-libs.user.js")
 ```
 
-Done. You now have a draggable BPM HUD, a method to control bpm with tap and shortcuts, and functions like `beats()` and `curve()`.
+Done. You now have a draggable BPM HUD, BPM control via tap tempo and keyboard shortcuts, and helper functions such as `beats()` and `curve()`.
 
 ## Shortcuts
 
