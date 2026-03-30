@@ -80,66 +80,82 @@ Original license: GPL-3.0
   let beatLoopStarted = false;
   let tapTimes = [];
 
-  function loadStoredBpm() {
-    try {
-      const raw = sessionStorage.getItem(CONFIG.bpmStorageKey);
-      if (raw !== null) {
-        const val = parseInt(raw, 10);
-        if (Number.isFinite(val) && val >= CONFIG.minBpm && val <= CONFIG.maxBpm) {
-          return val;
-        }
-      }
-    } catch (e) {}
-    return CONFIG.defaultBpm;
-  }
-
-  function loadStoredRate() {
-    try {
-      const raw = sessionStorage.getItem(CONFIG.rateStorageKey);
-      if (raw !== null) {
-        const val = parseFloat(raw);
-        if (Number.isFinite(val) && val >= CONFIG.minRateMultiplier && val <= CONFIG.maxRateMultiplier) {
-          return roundRateMultiplier(val);
-        }
-      }
-    } catch (e) {}
-    return CONFIG.defaultRateMultiplier;
-  }
-
-  function saveStoredBpm(value) {
-    try {
-      sessionStorage.setItem(CONFIG.bpmStorageKey, String(value));
-    } catch (e) {}
-  }
-
-  function saveStoredRate(value) {
-    try {
-      sessionStorage.setItem(CONFIG.rateStorageKey, String(value));
-    } catch (e) {}
-  }
-
-  let baseBpm = loadStoredBpm();
-  let rateMultiplier = loadStoredRate();
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Utility functions
+  // ─────────────────────────────────────────────────────────────────────────────
 
   function clamp(value, min, max) {
     return Math.max(min, Math.min(max, value));
   }
 
+  const ALLOWED_RATES = [1 / 32, 1 / 16, 1 / 8, 1 / 4, 1 / 2, 1, 2, 4, 8, 16, 32];
+
   function roundRateMultiplier(value) {
-    const allowed = [1 / 32, 1 / 16, 1 / 8, 1 / 4, 1 / 2, 1, 2, 4, 8, 16, 32];
-    let nearest = allowed[0];
-    let minDiff = Math.abs(value - nearest);
-
-    for (const candidate of allowed) {
-      const diff = Math.abs(value - candidate);
-      if (diff < minDiff) {
-        minDiff = diff;
-        nearest = candidate;
-      }
-    }
-
-    return nearest;
+    return ALLOWED_RATES.reduce((nearest, candidate) =>
+      Math.abs(value - candidate) < Math.abs(value - nearest) ? candidate : nearest
+    );
   }
+
+  function median(values) {
+    if (!values.length) return null;
+    const sorted = [...values].sort((a, b) => a - b);
+    const mid = Math.floor(sorted.length / 2);
+    return sorted.length % 2 === 0
+      ? (sorted[mid - 1] + sorted[mid]) / 2
+      : sorted[mid];
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Storage (sessionStorage for BPM/rate, localStorage for HUD position)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  function loadFromStorage(storage, key, parser, validator, fallback) {
+    try {
+      const raw = storage.getItem(key);
+      if (raw !== null) {
+        const val = parser(raw);
+        if (validator(val)) return val;
+      }
+    } catch (e) {}
+    return fallback;
+  }
+
+  function saveToStorage(storage, key, value) {
+    try {
+      storage.setItem(key, typeof value === "object" ? JSON.stringify(value) : String(value));
+    } catch (e) {}
+  }
+
+  function loadStoredBpm() {
+    return loadFromStorage(
+      sessionStorage,
+      CONFIG.bpmStorageKey,
+      (v) => parseInt(v, 10),
+      (v) => Number.isFinite(v) && v >= CONFIG.minBpm && v <= CONFIG.maxBpm,
+      CONFIG.defaultBpm
+    );
+  }
+
+  function loadStoredRate() {
+    return loadFromStorage(
+      sessionStorage,
+      CONFIG.rateStorageKey,
+      (v) => roundRateMultiplier(parseFloat(v)),
+      (v) => Number.isFinite(v) && v >= CONFIG.minRateMultiplier && v <= CONFIG.maxRateMultiplier,
+      CONFIG.defaultRateMultiplier
+    );
+  }
+
+  function saveStoredBpm(value) {
+    saveToStorage(sessionStorage, CONFIG.bpmStorageKey, value);
+  }
+
+  function saveStoredRate(value) {
+    saveToStorage(sessionStorage, CONFIG.rateStorageKey, value);
+  }
+
+  let baseBpm = loadStoredBpm();
+  let rateMultiplier = loadStoredRate();
 
   function getCodeMirrorInstance() {
     const el = document.querySelector(".CodeMirror");
@@ -151,16 +167,16 @@ Original license: GPL-3.0
     return cm ? cm.getValue() : "";
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Hydra integration
+  // ─────────────────────────────────────────────────────────────────────────────
+
   function getHydraObj() {
-    if (window.hydraSynth?.synth) return window.hydraSynth.synth;
-    if (window.hydraSynth) return window.hydraSynth;
-    return null;
+    return window.hydraSynth?.synth ?? window.hydraSynth ?? null;
   }
 
   function getHydraTime() {
-    if (window.hydraSynth?.synth?.time !== undefined) return window.hydraSynth.synth.time;
-    if (window.hydraSynth?.time !== undefined) return window.hydraSynth.time;
-    return null;
+    return window.hydraSynth?.synth?.time ?? window.hydraSynth?.time ?? null;
   }
 
   function getCurrentBaseBpm() {
@@ -168,36 +184,17 @@ Original license: GPL-3.0
   }
 
   function getCurrentEffectiveBpm() {
-    return clamp(
-      Math.round(baseBpm * rateMultiplier),
-      CONFIG.minBpm,
-      CONFIG.maxBpm
-    );
+    return clamp(Math.round(baseBpm * rateMultiplier), CONFIG.minBpm, CONFIG.maxBpm);
   }
 
   function getRateBadgeText() {
     if (rateMultiplier === 1) return "";
-
-    if (rateMultiplier > 1) {
-      return `x${rateMultiplier}`;
-    }
-
-    return `/${1 / rateMultiplier}`;
+    return rateMultiplier > 1 ? `x${rateMultiplier}` : `/${1 / rateMultiplier}`;
   }
 
-  function median(values) {
-    if (!values.length) return null;
-    const sorted = [...values].sort((a, b) => a - b);
-    const mid = Math.floor(sorted.length / 2);
-
-    if (sorted.length % 2 === 0) {
-      return (sorted[mid - 1] + sorted[mid]) / 2;
-    }
-
-    return sorted[mid];
-  }
-
-  // Beat helper API adapted from `hydra-tap.js` in `geikha/hyper-hydra`.
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Beat helper API (adapted from `hydra-tap.js` in `geikha/hyper-hydra`)
+  // ─────────────────────────────────────────────────────────────────────────────
 
   function getHydraBpmValue() {
     const bpm = Number(window.bpm);
@@ -279,26 +276,28 @@ Original license: GPL-3.0
     window.beatsTri_ = (n = 1) => createBeatFunction(() => beatsTriRampUp(n));
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // HUD (position, visibility, rendering)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  const defaultHudPos = { x: CONFIG.defaultHudX, y: CONFIG.defaultHudY };
+
   function loadHudPosition() {
-    try {
-      const raw = localStorage.getItem(CONFIG.hudStorageKey);
-      if (!raw) return { x: CONFIG.defaultHudX, y: CONFIG.defaultHudY };
-      const parsed = JSON.parse(raw);
-      if (typeof parsed.x === "number" && typeof parsed.y === "number") {
-        return parsed;
-      }
-    } catch (e) {}
-    return { x: CONFIG.defaultHudX, y: CONFIG.defaultHudY };
+    return loadFromStorage(
+      localStorage,
+      CONFIG.hudStorageKey,
+      JSON.parse,
+      (p) => typeof p?.x === "number" && typeof p?.y === "number",
+      defaultHudPos
+    );
   }
 
   function saveHudPosition(x, y) {
-    localStorage.setItem(CONFIG.hudStorageKey, JSON.stringify({ x, y }));
+    saveToStorage(localStorage, CONFIG.hudStorageKey, { x, y });
   }
 
   function isHudVisible() {
-    const raw = localStorage.getItem(CONFIG.hudVisibleKey);
-    if (raw === null) return true;
-    return raw === "true";
+    return loadFromStorage(localStorage, CONFIG.hudVisibleKey, (v) => v, (v) => v !== null, "true") === "true";
   }
 
   function applyHudVisibility() {
@@ -718,6 +717,10 @@ Original license: GPL-3.0
     applyHushButtonState();
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Hush / Unhush
+  // ─────────────────────────────────────────────────────────────────────────────
+
   async function evaluateCurrentSketch() {
     const code = getCurrentSketchCode();
     if (!code.trim()) return;
@@ -730,18 +733,10 @@ Original license: GPL-3.0
   }
 
   function callHush() {
-    try {
-      const hydra = getHydraObj();
-      if (hydra && typeof hydra.hush === "function") {
-        hydra.hush();
-        return true;
-      }
-      if (typeof window.hush === "function") {
-        window.hush();
-        return true;
-      }
-    } catch (err) {
-      console.error("[Hydra BPM Tools] hush error", err);
+    const hushFn = getHydraObj()?.hush ?? window.hush;
+    if (typeof hushFn === "function") {
+      hushFn();
+      return true;
     }
     return false;
   }
@@ -758,175 +753,83 @@ Original license: GPL-3.0
   }
 
   function toggleHush() {
-    if (isHushed) {
-      void unhushNow();
-    } else {
-      void hushNow();
-    }
+    void (isHushed ? unhushNow() : hushNow());
   }
 
   function resync() {
-    try {
-      if (window.hydraSynth?.synth) {
-        window.hydraSynth.synth.time = 0;
-        flashBeatVisualizer();
-        lastBeatIndex = -1;
-        console.log("[Hydra BPM Tools] hydraSynth.synth.time = 0");
-        return;
-      }
-
-      if (window.hydraSynth) {
-        window.hydraSynth.time = 0;
-        flashBeatVisualizer();
-        lastBeatIndex = -1;
-        console.log("[Hydra BPM Tools] hydraSynth.time = 0");
-        return;
-      }
-
+    const target = window.hydraSynth?.synth ?? window.hydraSynth;
+    if (!target) {
       console.warn("[Hydra BPM Tools] Hydra instance not found");
-    } catch (err) {
-      console.error("[Hydra BPM Tools] resync error", err);
+      return;
     }
+    target.time = 0;
+    flashBeatVisualizer();
+    lastBeatIndex = -1;
+    console.log("[Hydra BPM Tools] time = 0");
   }
 
-  function matchShortcut(e, cfgKey, cfgCtrl, cfgShift, cfgAlt, cfgMeta) {
-    return (
-      e.code === cfgKey &&
-      e.ctrlKey === cfgCtrl &&
-      e.shiftKey === cfgShift &&
-      e.altKey === cfgAlt &&
-      e.metaKey === cfgMeta
-    );
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Keyboard shortcuts
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  function matchShortcut(e, key, ctrl = false, shift = false, alt = false, meta = false) {
+    return e.code === key && e.ctrlKey === ctrl && e.shiftKey === shift && e.altKey === alt && e.metaKey === meta;
   }
 
-  function isResyncShortcut(e) {
-    return matchShortcut(
-      e,
-      CONFIG.resyncKey,
-      CONFIG.resyncCtrl,
-      CONFIG.resyncShift,
-      CONFIG.resyncAlt,
-      CONFIG.resyncMeta
-    );
+  function isCtrlShift(e, code) {
+    return matchShortcut(e, code, true, true, false, false);
   }
 
-  function isHushShortcut(e) {
-    return matchShortcut(
-      e,
-      CONFIG.hushKey,
-      CONFIG.hushCtrl,
-      CONFIG.hushShift,
-      CONFIG.hushAlt,
-      CONFIG.hushMeta
-    );
-  }
-
-  function isTapShortcut(e) {
-    return matchShortcut(
-      e,
-      CONFIG.tapKey,
-      CONFIG.tapCtrl,
-      CONFIG.tapShift,
-      CONFIG.tapAlt,
-      CONFIG.tapMeta
-    );
-  }
-
-  function isRunShortcut(e) {
-    return e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && e.code === "Enter";
-  }
-
-  function isBpmUpShortcut(e) {
-    return e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && e.code === "ArrowUp";
-  }
-
-  function isBpmDownShortcut(e) {
-    return e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && e.code === "ArrowDown";
-  }
-
-  function isRateDownShortcut(e) {
-    return e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && e.code === "ArrowLeft";
-  }
-
-  function isRateUpShortcut(e) {
-    return e.ctrlKey && e.shiftKey && !e.altKey && !e.metaKey && e.code === "ArrowRight";
+  function handleShortcut(e, action) {
+    e.preventDefault();
+    e.stopPropagation();
+    e.stopImmediatePropagation?.();
+    action();
   }
 
   function onKeyDown(e) {
     forceInitialBpmOnce();
 
-    if (isRunShortcut(e)) {
+    // Ctrl+Shift+Enter: run sketch (clear hush state)
+    if (isCtrlShift(e, "Enter")) {
       setHushed(false);
       return;
     }
 
-    if (isTapShortcut(e)) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation?.();
-      registerTapTempo();
-      return;
+    // Ctrl+Shift+T: tap tempo
+    if (matchShortcut(e, CONFIG.tapKey, CONFIG.tapCtrl, CONFIG.tapShift, CONFIG.tapAlt, CONFIG.tapMeta)) {
+      return handleShortcut(e, registerTapTempo);
     }
 
-    if (isHushShortcut(e)) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation?.();
-      toggleHush();
-      return;
+    // Ctrl+Shift+B: toggle hush
+    if (matchShortcut(e, CONFIG.hushKey, CONFIG.hushCtrl, CONFIG.hushShift, CONFIG.hushAlt, CONFIG.hushMeta)) {
+      return handleShortcut(e, toggleHush);
     }
 
-    if (isResyncShortcut(e)) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation?.();
-      resync();
-      return;
+    // Ctrl+Shift+R: resync
+    if (matchShortcut(e, CONFIG.resyncKey, CONFIG.resyncCtrl, CONFIG.resyncShift, CONFIG.resyncAlt, CONFIG.resyncMeta)) {
+      return handleShortcut(e, resync);
     }
 
-    if (isRateDownShortcut(e)) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation?.();
-      halveRateMultiplier();
-      return;
-    }
-
-    if (isRateUpShortcut(e)) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation?.();
-      doubleRateMultiplier();
-      return;
-    }
-
-    if (isBpmUpShortcut(e)) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation?.();
-      setBaseBpm(getCurrentBaseBpm() + CONFIG.bpmStep);
-      return;
-    }
-
-    if (isBpmDownShortcut(e)) {
-      e.preventDefault();
-      e.stopPropagation();
-      e.stopImmediatePropagation?.();
-      setBaseBpm(getCurrentBaseBpm() - CONFIG.bpmStep);
-    }
+    // Ctrl+Shift+Arrows: BPM and rate control
+    if (isCtrlShift(e, "ArrowLeft")) return handleShortcut(e, halveRateMultiplier);
+    if (isCtrlShift(e, "ArrowRight")) return handleShortcut(e, doubleRateMultiplier);
+    if (isCtrlShift(e, "ArrowUp")) return handleShortcut(e, () => setBaseBpm(baseBpm + CONFIG.bpmStep));
+    if (isCtrlShift(e, "ArrowDown")) return handleShortcut(e, () => setBaseBpm(baseBpm - CONFIG.bpmStep));
   }
 
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Initialization
+  // ─────────────────────────────────────────────────────────────────────────────
+
   function waitForHydraThenInitBpm() {
-    const maxTries = 200;
     let tries = 0;
-
     const timer = setInterval(() => {
-      tries += 1;
-      forceInitialBpmOnce();
-
-      if (initialBpmApplied || tries >= maxTries) {
+      if (++tries >= 200 || initialBpmApplied) {
         clearInterval(timer);
+        return;
       }
+      forceInitialBpmOnce();
     }, 100);
   }
 
