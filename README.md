@@ -1,7 +1,17 @@
 # Hydra BPM Tools
-A userscript for [Hydra](https://hydra.ojack.xyz/) that adds a minimal HUD for visualizing and controlling BPM.
+A library for [Hydra](https://hydra.ojack.xyz/) that adds a minimal HUD for visualizing and controlling BPM, beat-synced envelopes, and keyboard shortcuts for live performance.
 
 ![Hydra BPM Tools HUD](assets/hud.png)
+
+## Quick Start
+
+Add this line at the beginning of your Hydra sketch:
+
+```js
+await loadScript("https://raw.githubusercontent.com/beatmelab/hydra-bpm-tools/main/hydra-bpm-tools.lib.js")
+```
+
+That's it. You now have a BPM HUD and beat-synced functions like `beats()`, `beatsTri()`, and more.
 
 ## Features
 
@@ -39,13 +49,13 @@ Examples:
 - `[ BPM 120 /2 ● ]` → effective BPM = `60`
 - `[ BPM 120 ○ ]` → hush active (bypassed output)
 
-## How the plugin works
+## How it works
 
-This userscript stays lightweight and works by interacting with Hydra’s exposed global state.
+Hydra BPM Tools stays lightweight and works by interacting with Hydra's exposed global state.
 
 ### 1. It rewrites the `bpm` variable
 
-The script controls tempo by writing to the global variable:
+The library controls tempo by writing to the global variable:
 
 ```js
 window.bpm
@@ -53,7 +63,7 @@ window.bpm
 
 This means the tempo used by Hydra becomes the value managed by the HUD.
 
-The script keeps two related values:
+The library keeps two related values:
 
 - **Base BPM** → the main BPM number shown in the HUD
 - **Effective BPM** → the actual value written into `window.bpm`
@@ -113,20 +123,22 @@ You can also set the range for an envelope or a curved envelope by calling `.ran
 
 ### 5. Hush / unhush hides the current output
 
-The script uses Hydra’s `hush()` behavior as a quick way to blank the current visual output, similar to the global B button (bypass output) in Resolume Arena/Avenue. This is intended as a quick blank / restore control during live visual work.
+The library uses Hydra's `hush()` behavior as a quick way to blank the current visual output, similar to the global B button (bypass output) in Resolume Arena/Avenue. This is intended as a quick blank / restore control during live visual work.
 
-## Persistence
+## Persistence (userscript only)
+
+When using the userscript version:
 
 ### When navigating from one Hydra page to another Hydra page
 
-The script keeps:
+The userscript keeps:
 
 - base BPM
 - rate multiplier
 
 ### When opening Hydra in a new tab or window from outside Hydra
 
-The script resets to the following defaults:
+The userscript resets to the following defaults:
 
 - **BPM:** 120
 - **Multiplier:** none
@@ -134,40 +146,46 @@ The script resets to the following defaults:
 
 ## Installation
 
-### 1. Install a browser extension that can run custom user scripts
+### Load in the Hydra editor (recommended)
 
-Before installing Hydra BPM Tools, you need an extension that can run user scripts.
+Add this line at the beginning of your sketch:
 
-Common options include:
+```js
+await loadScript("https://raw.githubusercontent.com/beatmelab/hydra-bpm-tools/main/hydra-bpm-tools.lib.js")
+```
 
-- Tampermonkey
-- Violentmonkey
+No extensions, no setup — just paste and run.
 
-Availability depends on your browser and operating system. Most desktop browsers are supported, while mobile support is more limited.
+### Programmatic API
 
-### 2. Install the script
+The library exposes `window.hydraBpmTools` for programmatic control:
 
-Click the link below to install the latest version of the script:
+```js
+hydraBpmTools.setBpm(140)       // Set base BPM
+hydraBpmTools.getBpm()          // Get current base BPM
+hydraBpmTools.getEffectiveBpm() // Get effective BPM (with rate multiplier)
+hydraBpmTools.setRate(2)        // Set rate multiplier (x2)
+hydraBpmTools.getRate()         // Get current rate multiplier
+hydraBpmTools.resync()          // Reset Hydra time to 0
+hydraBpmTools.hush()            // Blank output
+hydraBpmTools.unhush()          // Restore output
+hydraBpmTools.toggleHush()      // Toggle hush state
+```
+
+### Alternative: Userscript (auto-load on every visit)
+
+If you want Hydra BPM Tools to load automatically every time you open Hydra, you can install it as a browser userscript.
+
+1. Install a userscript manager like [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/)
+2. Click the button below to install:
 
 [![Install Hydra BPM Tools](https://img.shields.io/badge/Install-Hydra%20BPM%20Tools-blue)](https://raw.githubusercontent.com/beatmelab/hydra-bpm-tools/main/hydra-bpm-tools.user.js)
 
-If your userscript manager is installed correctly, it should detect the script automatically and open the installation screen.
-
-### 3. Manual installation (alternative)
-
-If automatic installation does not work, open your userscript manager and create a new script.
-
-Replace the default content with the contents of:
-
-`hydra-bpm-tools.user.js`
-
-Then save the script and open:
-
-`https://hydra.ojack.xyz/`
+The userscript version also persists BPM and rate multiplier when navigating between Hydra pages.
 
 ## Notes
 
-This script is designed to stay lightweight and interfere with Hydra’s native UI as little as possible.
+Hydra BPM Tools is designed to stay lightweight and interfere with Hydra's native UI as little as possible.
 
 ## Author
 
