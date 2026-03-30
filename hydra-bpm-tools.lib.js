@@ -657,7 +657,7 @@ Original license: GPL-3.0
 
     const totalBeats = (t * bpm) / 60;
     const beatIndex = Math.floor(totalBeats);
-    const clockwiseOrder = [0, 1, 3, 2];
+    const clockwiseOrder = [1, 3, 2, 0];
     const activeIndex = clockwiseOrder[((beatIndex % 4) + 4) % 4];
 
     beatCells.forEach((cell, i) => {
@@ -677,6 +677,12 @@ Original license: GPL-3.0
         { duration: 110, easing: "ease-out" }
       );
     }
+
+    // Border pulse on first beat of every 16-beat cycle (stays for full beat)
+    const isFirstBeatOf16 = beatIndex % 16 === 0;
+    beatWrap.style.boxShadow = isFirstBeatOf16
+      ? "0 0 0 1px rgba(255,255,255,0.95), 0 0 12px rgba(255,255,255,0.8)"
+      : "none";
   }
 
   function startBeatLoop() {
@@ -697,7 +703,10 @@ Original license: GPL-3.0
     beatWrap.style.boxShadow = "0 0 0 2px rgba(255,255,255,0.95), 0 0 10px rgba(255,255,255,0.85)";
     clearTimeout(flashTimeout);
     flashTimeout = setTimeout(() => {
-      if (beatWrap) beatWrap.style.boxShadow = "none";
+      // Don't clear if we're on first beat of 16-beat cycle
+      if (beatWrap && lastBeatIndex % 16 !== 0) {
+        beatWrap.style.boxShadow = "none";
+      }
     }, 180);
   }
 
