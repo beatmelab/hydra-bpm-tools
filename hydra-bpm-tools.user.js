@@ -51,6 +51,12 @@ Original license: GPL-3.0
     tapAlt: false,
     tapMeta: false,
 
+    hudToggleKey: "KeyJ",
+    hudToggleCtrl: true,
+    hudToggleShift: true,
+    hudToggleAlt: false,
+    hudToggleMeta: false,
+
     hudStorageKey: "hydra-userscript-hud-pos",
     hudVisibleKey: "hydra-userscript-hud-visible",
     sessionBpmKey: "hydra-userscript-session-bpm",
@@ -323,7 +329,17 @@ Original license: GPL-3.0
 
   function applyHudVisibility() {
     if (!hud) return;
-    hud.style.display = isHudVisible() ? "flex" : "none";
+    const visible = isHudVisible();
+    hud.style.opacity = visible ? "1" : "0";
+    hud.style.pointerEvents = visible ? "auto" : "none";
+    hud.style.visibility = visible ? "visible" : "hidden";
+  }
+
+  function toggleHudVisibility() {
+    const visible = isHudVisible();
+    saveToStorage(localStorage, CONFIG.hudVisibleKey, !visible ? "true" : "false");
+    applyHudVisibility();
+    console.log("[Hydra userscript] HUD", !visible ? "shown" : "hidden");
   }
 
   function applyHushButtonState() {
@@ -832,6 +848,11 @@ Original license: GPL-3.0
     // Ctrl+Shift+T: tap tempo
     if (matchShortcut(e, CONFIG.tapKey, CONFIG.tapCtrl, CONFIG.tapShift, CONFIG.tapAlt, CONFIG.tapMeta)) {
       return handleShortcut(e, registerTapTempo);
+    }
+
+    // Ctrl+Shift+J: toggle HUD visibility
+    if (matchShortcut(e, CONFIG.hudToggleKey, CONFIG.hudToggleCtrl, CONFIG.hudToggleShift, CONFIG.hudToggleAlt, CONFIG.hudToggleMeta)) {
+      return handleShortcut(e, toggleHudVisibility);
     }
 
     // Ctrl+Shift+B: toggle hush
