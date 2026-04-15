@@ -18,10 +18,10 @@ Done. You now have a draggable BPM HUD, BPM control via tap tempo and keyboard s
 
 | Shortcut | Action |
 |----------|--------|
-| `Ctrl+Shift+↑/↓` | Adjust BPM |
-| `Ctrl+Shift+←/→` | Halve/double rate multiplier |
 | `Ctrl+Shift+T` | Tap tempo |
 | `Ctrl+Shift+R` | Resync (reset time to 0) |
+| `Ctrl+Shift+↑/↓` | Adjust BPM |
+| `Ctrl+Shift+←/→` | Halve/double rate multiplier |
 | `Ctrl+Shift+B` | Toggle hush (blank output) |
 
 ## Beat Envelopes
