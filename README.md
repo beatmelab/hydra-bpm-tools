@@ -6,13 +6,19 @@ Minimal BPM HUD with tap/resync and beat-synced envelopes for [Hydra](https://hy
 
 ## Quick Start
 
-Just paste this code at the start of Hydra editor: 
+Just paste this code at the top of the Hydra editor:
 
 ```js
-await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.0.0/hydra-bpm-tools.lib.js")
+await loadScript("https://link.beatmelab.com/hydra-bpm-tools")
 ```
 
 Done. You now have a draggable BPM HUD, BPM control via tap tempo and keyboard shortcuts, and helper functions such as `beats()` and `curve()`.
+
+> **Direct jsDelivr URL**
+>
+> ```js
+> await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.0.0/hydra-bpm-tools.lib.js")
+> ```
 
 ## Shortcuts
 
