@@ -14,11 +14,13 @@ await loadScript("https://link.beatmelab.com/hydra-bpm-tools")
 
 Done. You now have a draggable BPM HUD, BPM control via tap tempo and keyboard shortcuts, and helper functions such as `beats()` and `curve()`.
 
-> **Direct jsDelivr URL**
->
-> ```js
-> await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.0.0/hydra-bpm-tools.lib.js")
-> ```
+<details>
+<summary>Direct jsDelivr URL</summary>
+
+```js
+await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.0.0/hydra-bpm-tools.lib.js")
+```
+</details> 
 
 ## Shortcuts
 
