@@ -50,6 +50,12 @@ Original license: GPL-3.0
     tapAlt: false,
     tapMeta: false,
 
+    hudToggleKey: "KeyJ",
+    hudToggleCtrl: true,
+    hudToggleShift: true,
+    hudToggleAlt: false,
+    hudToggleMeta: false,
+
     hudStorageKey: "hydra-bpmtools-hud-pos",
     hudVisibleKey: "hydra-bpmtools-hud-visible",
 
@@ -302,7 +308,17 @@ Original license: GPL-3.0
 
   function applyHudVisibility() {
     if (!hud) return;
-    hud.style.display = isHudVisible() ? "flex" : "none";
+    const visible = isHudVisible();
+    hud.style.opacity = visible ? "1" : "0";
+    hud.style.pointerEvents = visible ? "auto" : "none";
+    hud.style.visibility = visible ? "visible" : "hidden";
+  }
+
+  function toggleHudVisibility() {
+    const visible = isHudVisible();
+    saveToStorage(localStorage, CONFIG.hudVisibleKey, !visible ? "true" : "false");
+    applyHudVisibility();
+    console.log("[Hydra BPM Tools] HUD", !visible ? "shown" : "hidden");
   }
 
   function applyHushButtonState() {
@@ -810,6 +826,11 @@ Original license: GPL-3.0
       return handleShortcut(e, registerTapTempo);
     }
 
+    // Ctrl+Shift+J: toggle HUD visibility
+    if (matchShortcut(e, CONFIG.hudToggleKey, CONFIG.hudToggleCtrl, CONFIG.hudToggleShift, CONFIG.hudToggleAlt, CONFIG.hudToggleMeta)) {
+      return handleShortcut(e, toggleHudVisibility);
+    }
+
     // Ctrl+Shift+B: toggle hush
     if (matchShortcut(e, CONFIG.hushKey, CONFIG.hushCtrl, CONFIG.hushShift, CONFIG.hushAlt, CONFIG.hushMeta)) {
       return handleShortcut(e, toggleHush);
@@ -867,6 +888,7 @@ Original license: GPL-3.0
       setRate: setRateMultiplier,
       getRate: () => rateMultiplier,
       resync,
+      toggleHudVisibility,
       hush: hushNow,
       unhush: unhushNow,
       toggleHush
