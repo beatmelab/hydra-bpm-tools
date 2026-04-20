@@ -624,8 +624,13 @@
             <p class="eyebrow">Internals</p>
             <h2>How it works internally</h2>
             <p>
-              Under the hood, Hydra BPM Tools updates Hydra's internal BPM value and resyncs
-              beat-driven motion by resetting Hydra's internal time variable.
+              Hydra BPM Tools works by updating Hydra's internal BPM value and resyncing beat-driven motion by resetting Hydra's internal time variable.
+            </p>
+            <p>
+              Rather than adding a separate transport or custom clock, the library hooks into Hydra's existing timing behavior. This keeps the workflow simple: BPM changes affect beat-based helpers immediately, and resync can bring animations back to a shared downbeat instantly.
+            </p>
+            <p> 
+              Because it builds on Hydra's own internal timing state, the library stays lightweight and easy to integrate into live coding sessions.
             </p>
           </div>
         </div>
