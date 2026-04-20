@@ -119,15 +119,55 @@ kbd {
   color: var(--text);
   line-height: 0;
   padding: 16px 0 24px;
-  width: 90px;
+  width: 45px;
+}
+
+.brand-mark-stack {
+  position: relative;
+  width: clamp(4.25rem, 8vw, 5.375rem);
+  flex: 0 0 auto;
+  display: block;
+  transform-origin: center;
+  transition: transform 300ms cubic-bezier(0.33, 1, 0.68, 1);
 }
 
 .brand-mark {
-  width: clamp(8.5rem, 16vw, 10.75rem);
+  width: 100%;
   height: auto;
-  flex: 0 0 auto;
   display: block;
   overflow: visible;
+  transition: opacity 300ms cubic-bezier(0.33, 1, 0.68, 1);
+}
+
+.brand-mark-overlay {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 300ms cubic-bezier(0.33, 1, 0.68, 1);
+  z-index: 1;
+}
+
+.brand-mark-wordmark {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+
+.brand:hover .brand-mark:not(.brand-mark-overlay):not(.brand-mark-wordmark),
+.brand:focus-visible .brand-mark:not(.brand-mark-overlay):not(.brand-mark-wordmark) {
+  opacity: 0;
+}
+
+.brand:hover .brand-mark-stack,
+.brand:focus-visible .brand-mark-stack {
+  transform: scale(1.1);
+}
+
+.brand:hover .brand-mark-overlay,
+.brand:focus-visible .brand-mark-overlay {
+  opacity: 1;
 }
 
 .brand-text {
