@@ -15,6 +15,8 @@
   --text-soft: #8a8a8a;
   --accent: #f5f5f5;
   --accent-soft: rgba(255, 255, 255, 0.08);
+  --hover-accent: #ff0d66;
+  --hover-accent-soft: rgba(224, 43, 108, 0.08);
   --shadow: none;
   --radius: 0;
   --radius-sm: 0;
@@ -22,6 +24,8 @@
   --mono: "SFMono-Regular", "Roboto Mono", "Menlo", "Consolas", monospace;
   --sans: "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
   --serif: "Chivo", "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
+  --beatme-pink: #ff0d66;
+  --beatme-blue: #27b5de;
 }
 
 *,
@@ -50,6 +54,7 @@ svg {
 
 a {
   color: inherit;
+  transition: color 160ms ease;
 }
 
 button,
@@ -143,7 +148,11 @@ kbd {
 
 .site-nav a:hover,
 .footer-links a:hover {
-  color: var(--text);
+  color: var(--hover-accent);
+}
+
+main a:not(.button):not(.copy-chip):not(.skip-link):hover {
+  color: var(--hover-accent);
 }
 
 .hero {
@@ -158,10 +167,11 @@ kbd {
 }
 
 .eyebrow {
-  margin: 0 0 1rem;
-  color: var(--text);
+  color: var(--beatme-blue) !important;
+  margin: 0 0 .5rem;
   font-size: 0.82rem;
-  letter-spacing: 0.18em;
+  font-weight: 600;
+  letter-spacing: 0.25em;
   text-transform: uppercase;
 }
 
@@ -170,17 +180,19 @@ h2,
 h3 {
   margin: 0;
   letter-spacing: -0.03em;
-  font-weight: 400;
+  font-weight: 500;
 }
 
 h1 {
+  color: var(--beatme-pink);
   font-family: var(--serif);
   font-size: clamp(3rem, 8vw, 5.8rem);
-  line-height: 0.88;
+  line-height: 0.87;
   max-width: 10ch;
 }
 
 h2 {
+  color: var(--beatme-pink);
   font-family: var(--serif);
   font-size: clamp(2rem, 4vw, 3rem);
   line-height: 1;
@@ -246,8 +258,9 @@ h3 {
 }
 
 .button-primary:hover {
-  background: #d9d9d9;
-  border-color: #d9d9d9;
+  background: var(--hover-accent);
+  border-color: var(--hover-accent);
+  color: #f5f5f5;
 }
 
 .button-secondary,
@@ -259,8 +272,9 @@ h3 {
 
 .button-secondary:hover,
 .copy-chip:hover {
-  border-color: #f5f5f5;
-  background: #151515;
+  border-color: var(--hover-accent);
+  background: var(--hover-accent-soft);
+  color: var(--hover-accent);
 }
 
 .copy-chip {
@@ -330,7 +344,7 @@ h3 {
 }
 
 .signal-main {
-  stroke: #f5f5f5;
+  stroke: var(--beatme-pink);
   stroke-width: 2;
   stroke-linecap: square;
   stroke-linejoin: round;
@@ -342,7 +356,7 @@ h3 {
 }
 
 .beat-columns rect {
-  fill: rgba(255, 255, 255, 0.24);
+  fill: var(--beatme-blue);
   stroke: none;
 }
 
@@ -460,6 +474,7 @@ h3 {
   cursor: pointer;
   list-style: none;
   color: var(--text-muted);
+  transition: color 160ms ease;
 }
 
 .code-card-summary::-webkit-details-marker {
@@ -470,6 +485,15 @@ h3 {
   content: "+";
   margin-left: auto;
   color: var(--text);
+  transition: color 160ms ease;
+}
+
+.code-card-summary:hover {
+  color: var(--hover-accent);
+}
+
+.code-card-summary:hover::after {
+  color: var(--hover-accent);
 }
 
 .code-card-secondary[open] .code-card-summary::after {
