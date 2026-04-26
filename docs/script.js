@@ -1,4 +1,6 @@
 document.addEventListener("DOMContentLoaded", () => {
+  setupMobileNav();
+
   const copyButtons = document.querySelectorAll(".copy-trigger");
 
   copyButtons.forEach((button) => {
@@ -31,6 +33,50 @@ document.addEventListener("DOMContentLoaded", () => {
     });
   });
 });
+
+function setupMobileNav() {
+  const navToggle = document.querySelector(".nav-toggle");
+  const siteNav = document.querySelector(".site-nav");
+
+  if (!navToggle || !siteNav) return;
+
+  const closeNav = () => {
+    navToggle.setAttribute("aria-expanded", "false");
+    navToggle.setAttribute("aria-label", "Open navigation menu");
+    siteNav.classList.remove("is-open");
+  };
+
+  const openNav = () => {
+    navToggle.setAttribute("aria-expanded", "true");
+    navToggle.setAttribute("aria-label", "Close navigation menu");
+    siteNav.classList.add("is-open");
+  };
+
+  navToggle.addEventListener("click", () => {
+    const expanded = navToggle.getAttribute("aria-expanded") === "true";
+    if (expanded) {
+      closeNav();
+    } else {
+      openNav();
+    }
+  });
+
+  siteNav.querySelectorAll("a").forEach((link) => {
+    link.addEventListener("click", closeNav);
+  });
+
+  window.addEventListener("resize", () => {
+    if (window.innerWidth > 760) {
+      closeNav();
+    }
+  });
+
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      closeNav();
+    }
+  });
+}
 
 async function copyText(text) {
   if (navigator.clipboard && window.isSecureContext) {
