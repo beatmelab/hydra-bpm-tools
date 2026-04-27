@@ -57,8 +57,15 @@ Original license: GPL-3.0
     hudToggleAlt: false,
     hudToggleMeta: false,
 
+    hudModeKey: "KeyK",
+    hudModeCtrl: true,
+    hudModeShift: true,
+    hudModeAlt: false,
+    hudModeMeta: false,
+
     hudStorageKey: "hydra-userscript-hud-pos",
     hudVisibleKey: "hydra-userscript-hud-visible",
+    hudModeStorageKey: "hydra-userscript-hud-mode",
     sessionBpmKey: "hydra-userscript-session-bpm",
     sessionRateKey: "hydra-userscript-session-rate",
 
@@ -73,6 +80,7 @@ Original license: GPL-3.0
   };
 
   let hud = null;
+  let minimalHud = null;
   let bpmWrap = null;
   let bpmEl = null;
   let rateBadgeEl = null;
@@ -307,7 +315,7 @@ Original license: GPL-3.0
   // HUD (position, visibility, rendering)
   // ─────────────────────────────────────────────────────────────────────────────
 
-  const defaultHudPos = { x: CONFIG.defaultHudX, y: CONFIG.defaultHudY };
+  const defaultHudPos = null;
 
   function loadHudPosition() {
     return loadFromStorage(
@@ -328,11 +336,72 @@ Original license: GPL-3.0
   }
 
   function applyHudVisibility() {
-    if (!hud) return;
     const visible = isHudVisible();
+    if (isMinimalMode()) {
+      if (minimalHud) minimalHud.style.display = visible ? "" : "none";
+      return;
+    }
+    if (!hud) return;
     hud.style.opacity = visible ? "1" : "0";
     hud.style.pointerEvents = visible ? "auto" : "none";
     hud.style.visibility = visible ? "visible" : "hidden";
+  }
+
+  function isMinimalMode() {
+    return loadFromStorage(localStorage, CONFIG.hudModeStorageKey,
+      (v) => v, (v) => v !== null, "false") === "true";
+  }
+
+  function saveHudMode(minimal) {
+    saveToStorage(localStorage, CONFIG.hudModeStorageKey, minimal ? "true" : "false");
+  }
+
+  function ensureMinimalHud() {
+    if (minimalHud && document.contains(minimalHud)) return minimalHud;
+    minimalHud = document.createElement("div");
+    minimalHud.id = "hydra-bpm-minimal";
+    minimalHud.style.position = "fixed";
+    minimalHud.style.bottom = "5px";
+    minimalHud.style.right = "20px";
+    minimalHud.style.fontFamily = "monospace";
+    minimalHud.style.fontSize = "14px";
+    minimalHud.style.color = "#aaaaaa";
+    minimalHud.style.pointerEvents = "none";
+    minimalHud.style.zIndex = "6";
+    minimalHud.style.userSelect = "none";
+    minimalHud.textContent = String(getCurrentBaseBpm());
+    (document.body || document.documentElement).appendChild(minimalHud);
+    return minimalHud;
+  }
+
+  function applyHudMode() {
+    const minimal = isMinimalMode();
+    const visible = isHudVisible();
+    if (minimal) {
+      if (hud) {
+        hud.style.opacity = "0";
+        hud.style.pointerEvents = "none";
+        hud.style.visibility = "hidden";
+      }
+      const mhud = ensureMinimalHud();
+      mhud.style.display = visible ? "" : "none";
+      mhud.textContent = String(getCurrentBaseBpm());
+    } else {
+      if (minimalHud) minimalHud.style.display = "none";
+      applyHudVisibility();
+    }
+  }
+
+  function toggleHudMode() {
+    const wasMinimal = isMinimalMode();
+    saveHudMode(!wasMinimal);
+    if (!wasMinimal) {
+      ensureMinimalHud();
+    } else {
+      ensureHud();
+    }
+    applyHudMode();
+    console.log("[Hydra userscript] HUD mode =", !wasMinimal ? "minimal" : "normal");
   }
 
   function toggleHudVisibility() {
@@ -384,7 +453,7 @@ Original license: GPL-3.0
 
   function ensureHud() {
     if (hud && document.contains(hud)) {
-      applyHudVisibility();
+      applyHudMode();
       keepHudInBounds();
       return hud;
     }
@@ -394,8 +463,8 @@ Original license: GPL-3.0
     hud = document.createElement("div");
     hud.id = "hydra-bpm-hud";
     hud.style.position = "fixed";
-    hud.style.left = `${pos.x}px`;
-    hud.style.top = `${pos.y}px`;
+    hud.style.left = pos ? `${pos.x}px` : "-9999px";
+    hud.style.top = pos ? `${pos.y}px` : "-9999px";
     hud.style.zIndex = "2147483647";
     hud.style.display = "flex";
     hud.style.alignItems = "center";
@@ -505,8 +574,17 @@ Original license: GPL-3.0
     const appendTarget = document.body || document.documentElement;
     appendTarget.appendChild(hud);
 
+    if (!pos) {
+      const pad = CONFIG.viewportPadding;
+      const x = Math.max(pad, window.innerWidth - hud.offsetWidth - pad);
+      const y = Math.max(pad, window.innerHeight - hud.offsetHeight - pad);
+      hud.style.left = `${x}px`;
+      hud.style.top = `${y}px`;
+      saveHudPosition(x, y);
+    }
+
     makeHudDraggable(hud);
-    applyHudVisibility();
+    applyHudMode();
     applyHushButtonState();
     renderHud();
     keepHudInBounds();
@@ -576,6 +654,8 @@ Original license: GPL-3.0
       rateBadgeEl.textContent = "";
       rateBadgeEl.style.display = "none";
     }
+
+    if (minimalHud) minimalHud.textContent = String(getCurrentBaseBpm());
   }
 
   function flashBpmText() {
@@ -855,6 +935,11 @@ Original license: GPL-3.0
       return handleShortcut(e, toggleHudVisibility);
     }
 
+    // Ctrl+Shift+K: toggle HUD mode (normal / minimal)
+    if (matchShortcut(e, CONFIG.hudModeKey, CONFIG.hudModeCtrl, CONFIG.hudModeShift, CONFIG.hudModeAlt, CONFIG.hudModeMeta)) {
+      return handleShortcut(e, toggleHudMode);
+    }
+
     // Ctrl+Shift+B: toggle hush
     if (matchShortcut(e, CONFIG.hushKey, CONFIG.hushCtrl, CONFIG.hushShift, CONFIG.hushAlt, CONFIG.hushMeta)) {
       return handleShortcut(e, toggleHush);
@@ -891,7 +976,7 @@ Original license: GPL-3.0
     installBeatHelpers();
     ensureHud();
     renderHud();
-    applyHudVisibility();
+    applyHudMode();
     applyHushButtonState();
     keepHudInBounds();
 

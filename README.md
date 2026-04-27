@@ -62,6 +62,7 @@ All shortcuts use `Ctrl+Shift` plus one additional key.
 | `Ctrl+Shift+B` | Toggle `hush()` |
 | `Ctrl+Shift+Enter` | Run sketch and clear hush state |
 | `Ctrl+Shift+J` | Toggle HUD visibility |
+| `Ctrl+Shift+K` | Toggle minimal HUD mode (number only) |
 
 ## Beat Envelopes
 
