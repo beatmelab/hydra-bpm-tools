@@ -25,7 +25,7 @@ You get:
 <summary>Direct jsDelivr URL</summary>
 
 ```js
-await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.0.0/hydra-bpm-tools.lib.js")
+await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.1.0/hydra-bpm-tools.lib.js")
 ```
 </details>
 
