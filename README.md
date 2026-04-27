@@ -25,7 +25,7 @@ You get:
 <summary>Direct jsDelivr URL</summary>
 
 ```js
-await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.1.0/hydra-bpm-tools.lib.js")
+await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.2.0/hydra-bpm-tools.lib.js")
 ```
 </details>
 
@@ -107,15 +107,31 @@ hydraBpmTools.toggleHush()
 
 ## Userscript
 
-If you want the tool available every time the Hydra editor opens, you can install it as a userscript. With a userscript manager, the library loads automatically whenever the Hydra editor opens.
+If you want the tool available every time the Hydra editor opens, install it as a userscript. The userscript is a minimal loader that injects the shared library automatically — all features are identical to the `loadScript` version.
 
 1. Install a userscript manager such as [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
 2. Open the install URL below and let your userscript manager handle the installation.
 
 [![Install](https://img.shields.io/badge/Install-Hydra%20BPM%20Tools-blue)](https://raw.githubusercontent.com/beatmelab/hydra-bpm-tools/main/hydra-bpm-tools.user.js)
 
+In userscript mode, BPM and rate are restored from your previous session when you navigate within Hydra. Opening a fresh tab or new browser window always starts at BPM 120, rate 1.
+
 For screenshots and a more visual overview, see the landing page:
 [beatmelab.com/hydra-bpm-tools](https://beatmelab.com/hydra-bpm-tools/)
+
+## What gets saved
+
+| Data | Storage | Persists |
+|------|---------|----------|
+| HUD position | localStorage | Across browser sessions (both modes) |
+| HUD visibility | localStorage | Across browser sessions (both modes) |
+| HUD mode (minimal/normal) | localStorage | Across browser sessions (both modes) |
+| BPM | sessionStorage | Same-tab navigation only (userscript mode) |
+| Rate multiplier | sessionStorage | Same-tab navigation only (userscript mode) |
+
+In **patch mode** (`loadScript`), BPM always starts at 120 and rate at 1 — the patch controls the starting state explicitly.
+
+In **userscript mode**, BPM and rate are restored from the previous page load when navigating within Hydra. Opening a fresh tab or a new browser session always starts at 120 / 1.
 
 ## Attribution
 

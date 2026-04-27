@@ -1,6 +1,6 @@
 /*
 Hydra BPM Tools
-Version: 2.1.0
+Version: 2.2.0
 https://github.com/beatmelab/hydra-bpm-tools
 
 Usage in Hydra editor:
@@ -12,6 +12,10 @@ License: GPL-3.0
 This library includes adapted functionality from `geikha/hyper-hydra`.
 Source: https://github.com/geikha/hyper-hydra
 Original license: GPL-3.0
+
+Mode: set window.__hydraBpmToolsMode = "userscript" before loading this file
+to enable session persistence (BPM/rate saved across same-tab navigations).
+Library mode (default) always starts fresh at BPM 120, rate 1.
 */
 
 (function () {
@@ -22,6 +26,8 @@ Original license: GPL-3.0
     return;
   }
   window.__hydraBpmToolsInstalled = true;
+
+  const IS_USERSCRIPT = window.__hydraBpmToolsMode === "userscript";
 
   const CONFIG = {
     defaultBpm: 120,
@@ -141,36 +147,87 @@ Original license: GPL-3.0
     } catch (e) {}
   }
 
-  function loadStoredBpm() {
+  function loadSessionBpm() {
     return loadFromStorage(
       sessionStorage,
       CONFIG.bpmStorageKey,
       (v) => parseInt(v, 10),
       (v) => Number.isFinite(v) && v >= CONFIG.minBpm && v <= CONFIG.maxBpm,
-      CONFIG.defaultBpm
+      null
     );
   }
 
-  function loadStoredRate() {
+  function loadSessionRate() {
     return loadFromStorage(
       sessionStorage,
       CONFIG.rateStorageKey,
       (v) => roundRateMultiplier(parseFloat(v)),
       (v) => Number.isFinite(v) && v >= CONFIG.minRateMultiplier && v <= CONFIG.maxRateMultiplier,
-      CONFIG.defaultRateMultiplier
+      null
     );
   }
 
-  function saveStoredBpm(value) {
+  function saveSessionBpm(value) {
     saveToStorage(sessionStorage, CONFIG.bpmStorageKey, value);
   }
 
-  function saveStoredRate(value) {
+  function saveSessionRate(value) {
     saveToStorage(sessionStorage, CONFIG.rateStorageKey, value);
   }
 
-  let baseBpm = loadStoredBpm();
-  let rateMultiplier = loadStoredRate();
+  let baseBpm = CONFIG.defaultBpm;
+  let rateMultiplier = CONFIG.defaultRateMultiplier;
+
+  // ─────────────────────────────────────────────────────────────────────────────
+  // Session state (userscript mode only)
+  // ─────────────────────────────────────────────────────────────────────────────
+
+  function migrateStorageKeys() {
+    try {
+      const lsMigrations = [
+        ["hydra-userscript-hud-pos",     CONFIG.hudStorageKey],
+        ["hydra-userscript-hud-visible", CONFIG.hudVisibleKey],
+        ["hydra-userscript-hud-mode",    CONFIG.hudModeStorageKey],
+      ];
+      for (const [oldKey, newKey] of lsMigrations) {
+        const oldVal = localStorage.getItem(oldKey);
+        if (oldVal !== null && localStorage.getItem(newKey) === null) {
+          localStorage.setItem(newKey, oldVal);
+        }
+        localStorage.removeItem(oldKey);
+      }
+      const ssMigrations = [
+        ["hydra-userscript-session-bpm",  CONFIG.bpmStorageKey],
+        ["hydra-userscript-session-rate", CONFIG.rateStorageKey],
+      ];
+      for (const [oldKey, newKey] of ssMigrations) {
+        const oldVal = sessionStorage.getItem(oldKey);
+        if (oldVal !== null && sessionStorage.getItem(newKey) === null) {
+          sessionStorage.setItem(newKey, oldVal);
+        }
+        sessionStorage.removeItem(oldKey);
+      }
+    } catch (e) {}
+  }
+
+  function cameFromHydraPage() {
+    try {
+      if (!document.referrer) return false;
+      return new URL(document.referrer).hostname === "hydra.ojack.xyz";
+    } catch (e) {
+      return false;
+    }
+  }
+
+  function initializeSessionState() {
+    if (cameFromHydraPage()) {
+      baseBpm = loadSessionBpm() ?? CONFIG.defaultBpm;
+      rateMultiplier = loadSessionRate() ?? CONFIG.defaultRateMultiplier;
+    } else {
+      baseBpm = CONFIG.defaultBpm;
+      rateMultiplier = CONFIG.defaultRateMultiplier;
+    }
+  }
 
   function getCodeMirrorInstance() {
     const el = document.querySelector(".CodeMirror");
@@ -656,7 +713,7 @@ Original license: GPL-3.0
 
   function setBaseBpm(value) {
     baseBpm = clamp(Math.round(value), CONFIG.minBpm, CONFIG.maxBpm);
-    saveStoredBpm(baseBpm);
+    if (IS_USERSCRIPT) saveSessionBpm(baseBpm);
     applyEffectiveBpm();
     renderHud();
     console.log("[Hydra BPM Tools] bpm base =", baseBpm, "| effective =", window.bpm);
@@ -668,7 +725,7 @@ Original license: GPL-3.0
       CONFIG.minRateMultiplier,
       CONFIG.maxRateMultiplier
     );
-    saveStoredRate(rateMultiplier);
+    if (IS_USERSCRIPT) saveSessionRate(rateMultiplier);
     applyEffectiveBpm();
     renderHud();
     flashBpmText();
@@ -811,6 +868,7 @@ Original license: GPL-3.0
     if (initialBpmApplied) return;
 
     if (window.hydraSynth || typeof window.bpm === "number") {
+      if (IS_USERSCRIPT) initializeSessionState();
       applyEffectiveBpm();
       initialBpmApplied = true;
       renderHud();
@@ -950,6 +1008,7 @@ Original license: GPL-3.0
   }
 
   function install() {
+    migrateStorageKeys();
     installBeatHelpers();
     ensureHud();
     renderHud();
@@ -980,6 +1039,12 @@ Original license: GPL-3.0
       unhush: unhushNow,
       toggleHush
     };
+
+    if (IS_USERSCRIPT) {
+      const saveFn = () => { saveSessionBpm(baseBpm); saveSessionRate(rateMultiplier); };
+      window.addEventListener("beforeunload", saveFn);
+      window.addEventListener("pagehide", saveFn);
+    }
 
     console.log("[Hydra BPM Tools] installed");
   }
