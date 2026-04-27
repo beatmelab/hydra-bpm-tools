@@ -23,6 +23,12 @@ Original license: GPL-3.0
 (function () {
   "use strict";
 
+  if (window.__hydraBpmToolsInstalled) {
+    console.log("[Hydra BPM Tools] already installed");
+    return;
+  }
+  window.__hydraBpmToolsInstalled = true;
+
   const CONFIG = {
     defaultBpm: 120,
     defaultRateMultiplier: 1,
