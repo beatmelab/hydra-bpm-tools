@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Hydra BPM Tools
 // @namespace    https://github.com/beatmelab/hydra-bpm-tools
-// @version      2.0.0
+// @version      2.1.0
 // @description  Adds small HUD with VJ tools (BPM, beat visualizer, resync, tap tempo, rate multiplier and hush toggle).
 // @author       @alt234vj | @beatmelab | https://www.beatmelab.com
 // @license      GPL-3.0

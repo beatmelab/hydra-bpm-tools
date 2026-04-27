@@ -1,9 +1,10 @@
 /*
-Hydra BPM Tools - Library version
+Hydra BPM Tools
+Version: 2.1.0
 https://github.com/beatmelab/hydra-bpm-tools
 
 Usage in Hydra editor:
-  await loadScript("https://raw.githubusercontent.com/beatmelab/hydra-bpm-tools/main/hydra-bpm-tools.lib.js")
+  await loadScript("https://link.beatmelab.com/hydra-bpm-tools")
 
 Author: @alt234vj | @beatmelab | https://www.beatmelab.com
 License: GPL-3.0
