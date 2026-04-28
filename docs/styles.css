@@ -26,6 +26,8 @@
   --serif: "Chivo", "Avenir Next", "Segoe UI", "Helvetica Neue", sans-serif;
   --beatme-pink: #ff0d66;
   --beatme-blue: #27b5de;
+  --anchor-offset-desktop: 5.6rem;
+  --anchor-offset-mobile: calc(4.6rem + 10px);
 }
 
 *,
@@ -36,6 +38,7 @@
 
 html {
   scroll-behavior: smooth;
+  scroll-padding-top: var(--anchor-offset-desktop);
 }
 
 body {
@@ -182,19 +185,17 @@ kbd {
 
 .nav-toggle {
   display: none;
+  flex-direction: column;
   align-items: center;
   justify-content: center;
   width: 3rem;
   height: 3rem;
   padding: 0;
-  border: 1px solid var(--line-strong);
-  background: #0a0a0a;
+  border: none;
+  background: transparent;
   color: var(--text);
   cursor: pointer;
-  transition:
-    border-color 160ms ease,
-    background-color 160ms ease,
-    color 160ms ease;
+  transition: color 160ms ease;
 }
 
 .nav-toggle span {
@@ -208,16 +209,15 @@ kbd {
 }
 
 .nav-toggle span + span {
-  margin-top: 0.34rem;
+  margin-top: 5px;
 }
 
 .nav-toggle:hover {
-  border-color: var(--hover-accent);
   color: var(--hover-accent);
 }
 
 .nav-toggle[aria-expanded="true"] span:nth-child(1) {
-  transform: translateY(5px) rotate(45deg);
+  transform: translateY(6px) rotate(45deg);
 }
 
 .nav-toggle[aria-expanded="true"] span:nth-child(2) {
@@ -225,7 +225,7 @@ kbd {
 }
 
 .nav-toggle[aria-expanded="true"] span:nth-child(3) {
-  transform: translateY(-5px) rotate(-45deg);
+  transform: translateY(-6px) rotate(-45deg);
 }
 
 .site-nav a,
@@ -871,12 +871,15 @@ button:focus-visible {
 }
 
 @media (max-width: 760px) {
+  html {
+    scroll-padding-top: var(--anchor-offset-mobile);
+  }
+
   .header-bar {
     flex-wrap: wrap;
     flex-direction: row;
     align-items: center;
     justify-content: space-between;
-    padding: 0.9rem 0;
   }
 
   .footer-bar {
@@ -891,21 +894,34 @@ button:focus-visible {
 
   .nav-toggle {
     display: inline-flex;
+    flex-direction: column;
     flex: 0 0 auto;
   }
 
   .site-nav {
-    display: none;
-    width: 100%;
+    position: absolute;
+    top: 100%;
+    left: 0;
+    right: 0;
+    display: flex;
     flex-direction: column;
     gap: 0;
-    margin-top: 0.9rem;
-    border-top: 1px solid var(--line);
+    padding: 0 1rem;
     background: rgba(10, 10, 10, 0.98);
+    border-bottom: 1px solid var(--line);
+    max-height: 0;
+    opacity: 0;
+    overflow: hidden;
+    pointer-events: none;
+    transition:
+      max-height 300ms cubic-bezier(0.33, 1, 0.68, 1),
+      opacity 220ms ease;
   }
 
   .site-nav.is-open {
-    display: flex;
+    max-height: 500px;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .site-nav a {
