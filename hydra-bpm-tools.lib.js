@@ -675,7 +675,12 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
   }
 
   function applyEffectiveBpm() {
-    window.bpm = getCurrentEffectiveBpm();
+    const effectiveBpm = getCurrentEffectiveBpm();
+    window.bpm = effectiveBpm;
+    const target = window.hydraSynth?.synth ?? window.hydraSynth;
+    if (target && typeof target.bpm !== "undefined") {
+      target.bpm = effectiveBpm;
+    }
   }
 
   function renderHud() {
@@ -844,6 +849,9 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
     beatLoopStarted = true;
 
     const tick = () => {
+      if (initialBpmApplied && window.bpm !== getCurrentEffectiveBpm()) {
+        applyEffectiveBpm();
+      }
       renderBeatVisualizer();
       requestAnimationFrame(tick);
     };
@@ -867,7 +875,7 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
   function forceInitialBpmOnce() {
     if (initialBpmApplied) return;
 
-    if (window.hydraSynth || typeof window.bpm === "number") {
+    if (window.hydraSynth || window.hydra || typeof window.bpm === "number") {
       if (IS_USERSCRIPT) initializeSessionState();
       applyEffectiveBpm();
       initialBpmApplied = true;
