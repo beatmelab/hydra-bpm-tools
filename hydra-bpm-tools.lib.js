@@ -248,7 +248,7 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
   }
 
   function getHydraTime() {
-    return window.hydraSynth?.synth?.time ?? window.hydraSynth?.time ?? null;
+    return window.hydraSynth?.synth?.time ?? window.hydraSynth?.time ?? window.time ?? null;
   }
 
   function getCurrentBaseBpm() {
