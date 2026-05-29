@@ -107,7 +107,7 @@ hydraBpmTools.toggleHush()
 
 ## Userscript
 
-If you want the tool available every time the Hydra editor opens, install it as a userscript. The userscript is a minimal loader that injects the shared library automatically — all features are identical to the `loadScript` version.
+If you want the tool available every time the Hydra editor opens, install it as a userscript. The userscript is a minimal loader that injects the extension automatically — all features are identical to the `loadScript` version.
 
 1. Install a userscript manager such as [Tampermonkey](https://www.tampermonkey.net/) or [Violentmonkey](https://violentmonkey.github.io/).
 2. Open the install URL below and let your userscript manager handle the installation.
