@@ -98,6 +98,11 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
   let lastBeatIndex = -1;
   let flashTimeout = null;
   let isHushed = false;
+  let hushIntent = false;
+  let hushOperationVersion = 0;
+  let pendingHushOperationVersion = 0;
+  let hushReconcileNeeded = false;
+  let hushReconcileScheduled = false;
   let beatLoopStarted = false;
   let tapTimes = [];
 
@@ -109,9 +114,22 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
     return Math.max(min, Math.min(max, value));
   }
 
+  function toFiniteNumber(value) {
+    if (typeof value !== "number" && typeof value !== "string") return null;
+    if (typeof value === "string" && value.trim() === "") return null;
+
+    try {
+      const numericValue = Number(value);
+      return Number.isFinite(numericValue) ? numericValue : null;
+    } catch (e) {
+      return null;
+    }
+  }
+
   const ALLOWED_RATES = [1 / 32, 1 / 16, 1 / 8, 1 / 4, 1 / 2, 1, 2, 4, 8, 16, 32];
 
   function roundRateMultiplier(value) {
+    if (!Number.isFinite(value)) return null;
     return ALLOWED_RATES.reduce((nearest, candidate) =>
       Math.abs(value - candidate) < Math.abs(value - nearest) ? candidate : nearest
     );
@@ -151,8 +169,8 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
     return loadFromStorage(
       sessionStorage,
       CONFIG.bpmStorageKey,
-      (v) => parseInt(v, 10),
-      (v) => Number.isFinite(v) && v >= CONFIG.minBpm && v <= CONFIG.maxBpm,
+      toFiniteNumber,
+      (v) => Number.isInteger(v) && v >= CONFIG.minBpm && v <= CONFIG.maxBpm,
       null
     );
   }
@@ -161,8 +179,8 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
     return loadFromStorage(
       sessionStorage,
       CONFIG.rateStorageKey,
-      (v) => roundRateMultiplier(parseFloat(v)),
-      (v) => Number.isFinite(v) && v >= CONFIG.minRateMultiplier && v <= CONFIG.maxRateMultiplier,
+      toFiniteNumber,
+      (v) => Number.isFinite(v) && ALLOWED_RATES.includes(v),
       null
     );
   }
@@ -318,25 +336,21 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
   }
 
   function beatsRampDown(divisor = 1) {
-    return getNormalizedBeatProgress(divisor);
+    return 1 - getNormalizedBeatProgress(divisor);
   }
 
   function beatsRampUp(divisor = 1) {
-    return 1 - getNormalizedBeatProgress(divisor);
+    return getNormalizedBeatProgress(divisor);
   }
 
   function beatsTriRampDown(divisor = 1) {
     const progress = getNormalizedBeatProgress(divisor * 2);
-    return progress >= 0.5
-      ? getNormalizedBeatProgress(divisor)
-      : 1 - getNormalizedBeatProgress(divisor);
+    return Math.abs(progress * 2 - 1);
   }
 
   function beatsTriRampUp(divisor = 1) {
     const progress = getNormalizedBeatProgress(divisor * 2);
-    return progress >= 0.5
-      ? 1 - getNormalizedBeatProgress(divisor)
-      : getNormalizedBeatProgress(divisor);
+    return 1 - Math.abs(progress * 2 - 1);
   }
 
   function installBeatHelpers() {
@@ -717,7 +731,13 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
   }
 
   function setBaseBpm(value) {
-    baseBpm = clamp(Math.round(value), CONFIG.minBpm, CONFIG.maxBpm);
+    const numericValue = toFiniteNumber(value);
+    if (numericValue === null) {
+      console.warn("[Hydra BPM Tools] ignored invalid bpm", value);
+      return;
+    }
+
+    baseBpm = clamp(Math.round(numericValue), CONFIG.minBpm, CONFIG.maxBpm);
     if (IS_USERSCRIPT) saveSessionBpm(baseBpm);
     applyEffectiveBpm();
     renderHud();
@@ -725,8 +745,14 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
   }
 
   function setRateMultiplier(value) {
+    const numericValue = toFiniteNumber(value);
+    if (numericValue === null) {
+      console.warn("[Hydra BPM Tools] ignored invalid rate", value);
+      return;
+    }
+
     rateMultiplier = clamp(
-      roundRateMultiplier(value),
+      roundRateMultiplier(numericValue),
       CONFIG.minRateMultiplier,
       CONFIG.maxRateMultiplier
     );
@@ -894,38 +920,119 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
   // ─────────────────────────────────────────────────────────────────────────────
 
   async function evaluateCurrentSketch() {
-    const code = getCurrentSketchCode();
-    if (!code.trim()) return;
-
     try {
+      const code = getCurrentSketchCode();
+      if (!code.trim()) return false;
+
       await window.eval(`(async () => {\n${code}\n})()`);
+      return true;
     } catch (err) {
       console.error("[Hydra BPM Tools] eval error", err);
+      return false;
     }
   }
 
   function callHush() {
-    const hushFn = getHydraObj()?.hush ?? window.hush;
-    if (typeof hushFn === "function") {
-      hushFn();
+    const hydra = getHydraObj();
+    const hushFn = hydra?.hush ?? window.hush;
+    if (typeof hushFn !== "function") return false;
+
+    try {
+      hushFn.call(hydra?.hush === hushFn ? hydra : window);
       return true;
+    } catch (err) {
+      console.error("[Hydra BPM Tools] hush error", err);
+      return false;
     }
-    return false;
+  }
+
+  function scheduleHushReconciliation() {
+    // Evaluated sketch code cannot be cancelled. Coalesce late completions into
+    // one final pass so the most recent hush intent wins without blocking.
+    hushReconcileNeeded = true;
+    if (hushReconcileScheduled || pendingHushOperationVersion !== 0) return;
+
+    hushReconcileScheduled = true;
+    Promise.resolve().then(() => {
+      hushReconcileScheduled = false;
+      if (!hushReconcileNeeded || pendingHushOperationVersion !== 0) return;
+
+      hushReconcileNeeded = false;
+      void runHushOperation(hushIntent);
+    });
+  }
+
+  function finishHushOperation(operationVersion) {
+    if (operationVersion !== hushOperationVersion) {
+      scheduleHushReconciliation();
+      return false;
+    }
+
+    pendingHushOperationVersion = 0;
+    if (hushReconcileNeeded) scheduleHushReconciliation();
+    return true;
+  }
+
+  async function runHushOperation(shouldHush) {
+    hushIntent = shouldHush;
+    const operationVersion = ++hushOperationVersion;
+    pendingHushOperationVersion = operationVersion;
+
+    try {
+      if (shouldHush) {
+        const didHush = callHush();
+        if (!finishHushOperation(operationVersion)) return false;
+
+        if (didHush) {
+          setHushed(true);
+        } else {
+          hushIntent = isHushed;
+        }
+        return didHush;
+      }
+
+      const restored = await evaluateCurrentSketch();
+      if (!finishHushOperation(operationVersion)) return false;
+
+      if (restored) {
+        setHushed(false);
+      } else {
+        hushIntent = isHushed;
+        if (isHushed) callHush();
+      }
+      return restored;
+    } catch (err) {
+      if (operationVersion === hushOperationVersion) {
+        pendingHushOperationVersion = 0;
+        hushIntent = isHushed;
+        if (isHushed) callHush();
+        if (hushReconcileNeeded) scheduleHushReconciliation();
+      } else {
+        scheduleHushReconciliation();
+      }
+      console.error("[Hydra BPM Tools] hush operation error", err);
+      return false;
+    }
   }
 
   async function hushNow() {
-    setHushed(true);
-    await evaluateCurrentSketch();
-    callHush();
+    return runHushOperation(true);
   }
 
   async function unhushNow() {
-    setHushed(false);
-    await evaluateCurrentSketch();
+    return runHushOperation(false);
   }
 
   function toggleHush() {
-    void (isHushed ? unhushNow() : hushNow());
+    void runHushOperation(!hushIntent);
+  }
+
+  function clearHushState() {
+    hushIntent = false;
+    hushOperationVersion += 1;
+    pendingHushOperationVersion = 0;
+    hushReconcileNeeded = false;
+    setHushed(false);
   }
 
   function resync() {
@@ -964,7 +1071,7 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
 
     // Ctrl+Shift+Enter: run sketch (clear hush state)
     if (isCtrlShift(e, "Enter")) {
-      setHushed(false);
+      clearHushState();
       return;
     }
 
