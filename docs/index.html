@@ -13,7 +13,7 @@
     <meta name="theme-color" content="#0a0a0a" />
 
     <!-- Canonical -->
-    <link rel="canonical" href="https://beatmelab.com/hydra-bpm-tools/" />
+    <link rel="canonical" href="https://hydra-bpm-tools.beatmelab.com/" />
 
     <!-- Favicons -->
     <link rel="icon" type="image/png" sizes="32x32" href="./favicon.png">
@@ -26,7 +26,7 @@
     <meta property="og:title" content="Hydra BPM Tools by BeatMe Lab — Tap Tempo and Beat Sync for Hydra">
     <meta property="og:description" content="Tempo control for Hydra: tap tempo, resync, BPM nudging, a draggable HUD, and beat-synced helpers for live performance and VJ workflows.">
     <meta property="og:image" content="https://hydra-bpm-tools.beatmelab.com/og-image.jpg">
-    <meta property="og:image:alt" content="Hydra BPM Tools preview image showing the BPM HUD inside Hydra">
+    <meta property="og:image:alt" content="Hydra BPM Tools landing preview with a Quick Start snippet and beat grid graphic">
 
 
     <!-- Twitter / X -->
@@ -34,7 +34,7 @@
     <meta name="twitter:title" content="Hydra BPM Tools by BeatMe Lab — Tap Tempo and Beat Sync for Hydra">
     <meta name="twitter:description" content="Tempo control for Hydra: tap tempo, resync, BPM nudging, a draggable HUD, and beat-synced helpers for live performance and VJ workflows.">
     <meta name="twitter:image" content="https://hydra-bpm-tools.beatmelab.com/og-image.jpg">
-    <meta name="twitter:image:alt" content="Hydra BPM Tools preview image showing the BPM HUD inside Hydra">
+    <meta name="twitter:image:alt" content="Hydra BPM Tools landing preview with a Quick Start snippet and beat grid graphic">
 
     <script type="application/ld+json">
       {
@@ -44,11 +44,11 @@
         "description": "A minimal BPM HUD and beat tools utility for Hydra live coding with tap tempo, resync, keyboard shortcuts, userscript support, and beat-synced helpers.",
         "codeRepository": "https://github.com/beatmelab/hydra-bpm-tools",
         "license": "https://www.gnu.org/licenses/gpl-3.0.html",
-        "url": "https://beatmelab.com/hydra-bpm-tools/",
+        "url": "https://hydra-bpm-tools.beatmelab.com/",
         "publisher": {
           "@type": "Organization",
           "name": "BeatMe Lab",
-          "url": "https://beatmelab.com"
+          "url": "https://www.beatmelab.com/"
         },
         "programmingLanguage": "JavaScript",
         "runtimePlatform": "Browser",
@@ -71,10 +71,11 @@
   </head>
   <body>
     <a class="skip-link" href="#main">Skip to content</a>
+    <div class="sr-only" id="copy-status" role="status" aria-live="polite" aria-atomic="true"></div>
 
     <header class="site-header">
       <div class="shell header-bar">
-        <a class="brand" href="https://beatmelab.com" aria-label="BeatMe Lab">
+        <a class="brand" href="https://www.beatmelab.com/" aria-label="BeatMe Lab">
           <span class="brand-mark-stack" aria-hidden="true">
             <svg class="brand-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 154.89 107.16" focusable="false">
               <defs>
@@ -315,6 +316,7 @@
           <a href="#code">Installation</a>
           <a href="#shortcuts">Shortcuts</a>
           <a href="#envelopes">Envelopes</a>
+          <a href="#api">API</a>
           <a href="#userscript">Userscript</a>
         </nav>
       </div>
@@ -327,7 +329,7 @@
             <p class="eyebrow">Hydra Extension</p>
             <h1>Hydra <br>BPM Tools</h1>
             <p class="hero-subtitle">
-              Tempo control for <a href="https://hydra.ojack.xyz/" target="_blank">Hydra</a>, closer to how BPM is handled in VJ software:
+              Tempo control for <a href="https://hydra.ojack.xyz/" target="_blank" rel="noopener noreferrer">Hydra</a>, closer to how BPM is handled in VJ software:
               tap tempo, resync, BPM nudging, a draggable HUD, and beat-synced helpers.
             </p>
 
@@ -336,6 +338,7 @@
                 class="button button-primary"
                 href="https://hydra.ojack.xyz/?sketch_id=rd6Zb4kJVo69hSwz"
                 target="_blank"
+                rel="noopener noreferrer"
                 title="Opens Hydra with BPM Tools already loaded"
               >
                 <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
@@ -350,6 +353,7 @@
                 class="button button-secondary"
                 href="https://github.com/beatmelab/hydra-bpm-tools"
                 target="_blank"
+                rel="noopener noreferrer"
               >
                 <svg class="button-icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
                   <path
@@ -432,14 +436,20 @@
           </div>
 
           <figure class="hud-showcase">
-            <img
-              class="hud-showcase-image"
-              src="hud-web.jpg"
-              alt="Hydra editor screenshot showing the BPM Tools HUD in the lower-left corner"
-              width="2194"
-              height="1102"
-              loading="lazy"
-            />
+            <picture>
+              <source media="(max-width: 760px)" type="image/webp" srcset="hud-web-mobile.webp" />
+              <source media="(max-width: 760px)" srcset="hud-web-mobile.jpg" />
+              <source type="image/webp" srcset="hud-web.webp" />
+              <img
+                class="hud-showcase-image"
+                src="hud-web.jpg"
+                alt="Hydra editor screenshot showing the BPM Tools HUD at base BPM 123 with a times-two rate multiplier"
+                width="2194"
+                height="1102"
+                loading="lazy"
+                decoding="async"
+              />
+            </picture>
             <span class="hud-showcase-overlay" aria-hidden="true">
               <span class="hud-showcase-highlight"></span>
             </span>
@@ -455,7 +465,7 @@
               </span>
               <div class="feature-body">
                 <h3>Draggable BPM HUD</h3>
-                <p>Displays the current BPM on screen and can be dragged to any position while you work.</p>
+                <p>The normal HUD displays the base BPM and active rate multiplier; minimal mode shows only the base BPM. Hydra runs at the resulting effective BPM.</p>
               </div>
             </article>
             <article class="feature-card">
@@ -468,7 +478,7 @@
               </span>
               <div class="feature-body">
                 <h3>Tap tempo</h3>
-                <p>Sets tempo by tapping, which is often the fastest way to match external music or video.</p>
+                <p>Sets tempo after at least three taps. A pause longer than two seconds starts a new tap sequence.</p>
               </div>
             </article>
             <article class="feature-card">
@@ -513,7 +523,7 @@
               </span>
               <div class="feature-body">
                 <h3>Hush toggle</h3>
-                <p>Lets you blank the output and restore it without removing the timing state.</p>
+                <p>Blanks Hydra's outputs without resetting BPM or time. Unhush re-evaluates the current editor contents.</p>
               </div>
             </article>
             <article class="feature-card">
@@ -525,7 +535,7 @@
               </span>
               <div class="feature-body">
                 <h3>Beat-synced helpers</h3>
-                <p>Provides <code>beats()</code>, <code>beatsTri()</code>, <code>curve()</code>, and <code>range()</code> for <a href="#envelopes">tempo-based modulation</a>.</p>
+                <p>Provides <code>beats()</code>, <code>beats_()</code>, <code>beatsTri()</code>, and <code>beatsTri_()</code>, each chainable with <code>.curve()</code> and <code>.range()</code>.</p>
               </div>
             </article>
             <article class="feature-card">
@@ -597,7 +607,7 @@
                     class="copy-chip copy-trigger"
                     type="button"
                     data-copy-target="code-jsdelivr"
-                    aria-label="Copy direct jsDelivr URL"
+                    aria-label="Copy direct jsDelivr snippet"
                   >
                     Copy
                   </button>
@@ -620,7 +630,12 @@
             </p>
           </div>
 
-          <div class="shortcut-table-wrap">
+          <div
+            class="shortcut-table-wrap"
+            role="region"
+            aria-label="Hydra BPM Tools keyboard shortcuts"
+            tabindex="0"
+          >
             <table class="shortcut-table">
               <caption class="sr-only">Hydra BPM Tools keyboard shortcuts</caption>
               <thead>
@@ -685,7 +700,12 @@
           </div>
 
           <article class="code-card code-card-wide">
-            <div class="envelope-table-wrap">
+            <div
+              class="envelope-table-wrap"
+              role="region"
+              aria-label="Hydra BPM Tools beat envelope functions"
+              tabindex="0"
+            >
               <table class="envelope-table">
                 <caption class="sr-only">Hydra BPM Tools beat envelope functions</caption>
                 <thead>
@@ -698,22 +718,22 @@
                 <tbody>
                   <tr>
                     <td><code>beats(n)</code></td>
-                    <td><code>1 → 0</code> over <code>n</code> beats</td>
+                    <td><code>1 → 0</code>; repeats every <code>n</code> beats</td>
                     <td>Decay-style modulation.</td>
                   </tr>
                   <tr>
                     <td><code>beats_(n)</code></td>
-                    <td><code>0 → 1</code> over <code>n</code> beats</td>
+                    <td><code>0 → 1</code>; repeats every <code>n</code> beats</td>
                     <td>Ramp-up motion.</td>
                   </tr>
                   <tr>
                     <td><code>beatsTri(n)</code></td>
-                    <td><code>1 → 0 → 1</code> over <code>n</code> beats</td>
+                    <td><code>1 → 0</code> in <code>n</code> beats, then <code>0 → 1</code> in another <code>n</code> (full cycle: <code>2n</code>)</td>
                     <td>Cyclic up/down movement.</td>
                   </tr>
                   <tr>
                     <td><code>beatsTri_(n)</code></td>
-                    <td><code>0 → 1 → 0</code> over <code>n</code> beats</td>
+                    <td><code>0 → 1</code> in <code>n</code> beats, then <code>1 → 0</code> in another <code>n</code> (full cycle: <code>2n</code>)</td>
                     <td>Same cycle, inverted phase.</td>
                   </tr>
                 </tbody>
@@ -759,7 +779,7 @@
             <article class="value-card">
               <h3>Tap tempo in Hydra</h3>
               <p>
-                Hydra does not provide direct BPM controls. You can change the <code>bpm</code> variable manually, but that is awkward during rehearsal or performance.
+                Hydra exposes a <code>bpm</code> variable, but it does not provide dedicated on-screen controls for tapping, nudging, or resyncing tempo during a performance.
               </p>
             </article>
             <article class="value-card">
@@ -788,21 +808,24 @@
         <div class="shell userscript-layout">
           <div class="section-head compact">
             <p class="eyebrow">Userscript</p>
-            <h2>Automatic injection option</h2>
+            <h2>Load automatically with a userscript</h2>
             <p>
-              If you want the tool available every time the Hydra editor opens, you can also install it as a userscript.
-              With a userscript manager, the extension loads automatically whenever the Hydra editor opens.
+              The userscript loads the same controls and helper functions whenever the Hydra editor opens.
+              It also stores valid base BPM and rate values in <code>sessionStorage</code> and restores them when the new page reports another Hydra page as its referrer. A direct visit starts at BPM 120 and rate 1.
+            </p>
+            <p>
+              HUD position, visibility, and minimal mode are stored in <code>localStorage</code> in both installation modes.
             </p>
           </div>
 
           <div class="userscript-card">
             <ol class="steps">
               <li>Install a userscript manager (such as
-              <a href="https://www.tampermonkey.net/" target="_blank" rel="noreferrer">
+              <a href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">
                 Tampermonkey
               </a>
               or
-              <a href="https://violentmonkey.github.io/" target="_blank" rel="noreferrer">
+              <a href="https://violentmonkey.github.io/" target="_blank" rel="noopener noreferrer">
                 Violentmonkey
               </a>) in your favorite browser.</li>
               <li>Click the "Install Userscript" button. Your userscript manager will handle the installation.</li>
@@ -811,7 +834,7 @@
               class="button button-secondary"
               href="https://raw.githubusercontent.com/beatmelab/hydra-bpm-tools/main/hydra-bpm-tools.user.js"
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
             >
               Install Userscript
             </a>
@@ -850,10 +873,21 @@
           <article class="api-card">
             <pre><code>hydraBpmTools.setBpm(140)
 hydraBpmTools.getBpm()
+hydraBpmTools.getEffectiveBpm()
 hydraBpmTools.setRate(2)
+hydraBpmTools.getRate()
 hydraBpmTools.resync()
 hydraBpmTools.toggleHudVisibility()
+hydraBpmTools.toggleHudMode()
+await hydraBpmTools.hush()
+await hydraBpmTools.unhush()
 hydraBpmTools.toggleHush()</code></pre>
+            <p>
+              <code>getBpm()</code> returns the base BPM shown in the HUD; <code>getEffectiveBpm()</code> returns the rounded BPM applied after the rate multiplier, limited to 1–999. <code>setBpm()</code> rounds and limits the base BPM to 1–999. <code>setRate()</code> snaps to the nearest supported multiplier: 1/32, 1/16, 1/8, 1/4, 1/2, 1, 2, 4, 8, 16, or 32. Both setters accept finite numbers and numeric strings; other values are ignored.
+            </p>
+            <p>
+              <code>hush()</code> and <code>unhush()</code> are asynchronous and resolve to <code>true</code> on success or <code>false</code> otherwise. Unhushing evaluates the current sketch again; it does not restore a saved output snapshot.
+            </p>
           </article>
         </div>
       </section>
@@ -876,8 +910,8 @@ hydraBpmTools.toggleHush()</code></pre>
               <h3>Attribution</h3>
               <p>
                 The envelope API is adapted from
-                <a href="https://github.com/geikha/hyper-hydra" target="_blank" rel="noreferrer">
-                  hyper-hydra
+                <a href="https://github.com/geikha/hyper-hydra/blob/main/doc/hydra-tap.md" target="_blank" rel="noopener noreferrer">
+                  <code>hydra-tap</code> in hyper-hydra
                 </a>.
               </p>
             </article>
@@ -888,7 +922,7 @@ hydraBpmTools.toggleHush()</code></pre>
                 <a
                   href="https://github.com/beatmelab/hydra-bpm-tools"
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                 >
                   GitHub</a>.
               </p>
@@ -902,8 +936,8 @@ hydraBpmTools.toggleHush()</code></pre>
       <div class="shell footer-bar">
         <p>BeatMe Lab Studio</p>
         <div class="footer-links">
-          <a href="https://beatmelab.com" target="_blank" rel="noreferrer">beatmelab.com</a>
-          <a href="https://github.com/beatmelab/hydra-bpm-tools" target="_blank" rel="noreferrer">
+          <a href="https://www.beatmelab.com/" target="_blank" rel="noopener noreferrer">beatmelab.com</a>
+          <a href="https://github.com/beatmelab/hydra-bpm-tools" target="_blank" rel="noopener noreferrer">
             GitHub repository
           </a>
         </div>
