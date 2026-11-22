@@ -1,21 +1,18 @@
 /*
 Hydra BPM Tools
-Version: 2.2.3
+Version: 2.2.4
 https://github.com/beatmelab/hydra-bpm-tools
 
 Usage in Hydra editor:
   await loadScript("https://link.beatmelab.com/hydra-bpm-tools")
 
-Author: @alt234vj | @beatmelab | https://www.beatmelab.com
+Author: Gonzalo Ovejero | @alt234vj | @beatmelab | https://www.beatmelab.com
 License: GPL-3.0
 
 This library includes adapted functionality from `geikha/hyper-hydra`.
 Source: https://github.com/geikha/hyper-hydra
 Original license: GPL-3.0
 
-Mode: set window.__hydraBpmToolsMode = "userscript" before loading this file
-to enable session persistence (BPM/rate saved across same-tab navigations).
-Library mode (default) always starts fresh at BPM 120, rate 1.
 */
 
 (function () {
@@ -26,8 +23,6 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
     return;
   }
   window.__hydraBpmToolsInstalled = true;
-
-  const IS_USERSCRIPT = window.__hydraBpmToolsMode === "userscript";
 
   const CONFIG = {
     defaultBpm: 120,
@@ -51,7 +46,7 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
     hushAlt: false,
     hushMeta: false,
 
-    tapKey: "KeyT",
+    tapKeys: ["Space", "KeyT"],
     tapCtrl: true,
     tapShift: true,
     tapAlt: false,
@@ -72,9 +67,6 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
     hudStorageKey: "hydra-bpmtools-hud-pos",
     hudVisibleKey: "hydra-bpmtools-hud-visible",
     hudModeStorageKey: "hydra-bpmtools-hud-mode",
-
-    bpmStorageKey: "hydra-bpmtools-bpm",
-    rateStorageKey: "hydra-bpmtools-rate",
 
     defaultHudX: 12,
     defaultHudY: 12,
@@ -145,7 +137,7 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
   }
 
   // ─────────────────────────────────────────────────────────────────────────────
-  // Storage (sessionStorage for BPM/rate, localStorage for HUD position)
+  // Storage for HUD preferences
   // ─────────────────────────────────────────────────────────────────────────────
 
   function loadFromStorage(storage, key, parser, validator, fallback) {
@@ -165,40 +157,8 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
     } catch (e) {}
   }
 
-  function loadSessionBpm() {
-    return loadFromStorage(
-      sessionStorage,
-      CONFIG.bpmStorageKey,
-      toFiniteNumber,
-      (v) => Number.isInteger(v) && v >= CONFIG.minBpm && v <= CONFIG.maxBpm,
-      null
-    );
-  }
-
-  function loadSessionRate() {
-    return loadFromStorage(
-      sessionStorage,
-      CONFIG.rateStorageKey,
-      toFiniteNumber,
-      (v) => Number.isFinite(v) && ALLOWED_RATES.includes(v),
-      null
-    );
-  }
-
-  function saveSessionBpm(value) {
-    saveToStorage(sessionStorage, CONFIG.bpmStorageKey, value);
-  }
-
-  function saveSessionRate(value) {
-    saveToStorage(sessionStorage, CONFIG.rateStorageKey, value);
-  }
-
   let baseBpm = CONFIG.defaultBpm;
   let rateMultiplier = CONFIG.defaultRateMultiplier;
-
-  // ─────────────────────────────────────────────────────────────────────────────
-  // Session state (userscript mode only)
-  // ─────────────────────────────────────────────────────────────────────────────
 
   function migrateStorageKeys() {
     try {
@@ -214,37 +174,7 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
         }
         localStorage.removeItem(oldKey);
       }
-      const ssMigrations = [
-        ["hydra-userscript-session-bpm",  CONFIG.bpmStorageKey],
-        ["hydra-userscript-session-rate", CONFIG.rateStorageKey],
-      ];
-      for (const [oldKey, newKey] of ssMigrations) {
-        const oldVal = sessionStorage.getItem(oldKey);
-        if (oldVal !== null && sessionStorage.getItem(newKey) === null) {
-          sessionStorage.setItem(newKey, oldVal);
-        }
-        sessionStorage.removeItem(oldKey);
-      }
     } catch (e) {}
-  }
-
-  function cameFromHydraPage() {
-    try {
-      if (!document.referrer) return false;
-      return new URL(document.referrer).hostname === "hydra.ojack.xyz";
-    } catch (e) {
-      return false;
-    }
-  }
-
-  function initializeSessionState() {
-    if (cameFromHydraPage()) {
-      baseBpm = loadSessionBpm() ?? CONFIG.defaultBpm;
-      rateMultiplier = loadSessionRate() ?? CONFIG.defaultRateMultiplier;
-    } else {
-      baseBpm = CONFIG.defaultBpm;
-      rateMultiplier = CONFIG.defaultRateMultiplier;
-    }
   }
 
   function getCodeMirrorInstance() {
@@ -738,7 +668,6 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
     }
 
     baseBpm = clamp(Math.round(numericValue), CONFIG.minBpm, CONFIG.maxBpm);
-    if (IS_USERSCRIPT) saveSessionBpm(baseBpm);
     applyEffectiveBpm();
     renderHud();
     console.log("[Hydra BPM Tools] bpm base =", baseBpm, "| effective =", window.bpm);
@@ -756,7 +685,6 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
       CONFIG.minRateMultiplier,
       CONFIG.maxRateMultiplier
     );
-    if (IS_USERSCRIPT) saveSessionRate(rateMultiplier);
     applyEffectiveBpm();
     renderHud();
     flashBpmText();
@@ -902,7 +830,6 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
     if (initialBpmApplied) return;
 
     if (window.hydraSynth || window.hydra || typeof window.bpm === "number") {
-      if (IS_USERSCRIPT) initializeSessionState();
       applyEffectiveBpm();
       initialBpmApplied = true;
       renderHud();
@@ -1075,9 +1002,11 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
       return;
     }
 
-    // Ctrl+Shift+T: tap tempo
-    if (matchShortcut(e, CONFIG.tapKey, CONFIG.tapCtrl, CONFIG.tapShift, CONFIG.tapAlt, CONFIG.tapMeta)) {
-      return handleShortcut(e, registerTapTempo);
+    // Ctrl+Shift+Space: tap tempo (Ctrl+Shift+T remains a legacy alias)
+    if (CONFIG.tapKeys.some((key) => matchShortcut(e, key, CONFIG.tapCtrl, CONFIG.tapShift, CONFIG.tapAlt, CONFIG.tapMeta))) {
+      return handleShortcut(e, () => {
+        if (!e.repeat) registerTapTempo();
+      });
     }
 
     // Ctrl+Shift+J: toggle HUD visibility
@@ -1154,12 +1083,6 @@ Library mode (default) always starts fresh at BPM 120, rate 1.
       unhush: unhushNow,
       toggleHush
     };
-
-    if (IS_USERSCRIPT) {
-      const saveFn = () => { saveSessionBpm(baseBpm); saveSessionRate(rateMultiplier); };
-      window.addEventListener("beforeunload", saveFn);
-      window.addEventListener("pagehide", saveFn);
-    }
 
     console.log("[Hydra BPM Tools] installed");
   }

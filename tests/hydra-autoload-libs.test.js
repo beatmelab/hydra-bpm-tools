@@ -43,7 +43,7 @@ test("autoload userscript is limited to the Hydra editor", () => {
   assert.doesNotMatch(userscriptSource, /@match\s+https:\/\/hydra\.ojack\.xyz\/\*$/m);
 });
 
-test("autoload library is pinned and protected by SRI", () => {
+test("autoload example library is pinned", () => {
   const injectedSource = getInjectedSource();
 
   assert.doesNotThrow(() => new vm.Script(injectedSource));
@@ -51,10 +51,7 @@ test("autoload library is pinned and protected by SRI", () => {
     injectedSource,
     /extra-shaders-for-hydra@a0a2898b2a4048ae78b671a006f1fbd64c92a9ee\/lib\/all\.js/
   );
-  assert.match(
-    injectedSource,
-    /sha384-v7omXa4zRjQoJx15yVcvOJxH\+xDd0T7y6Ni\/ZDwXCS7PIVGh4OqZ4g\+2AbXxIMJR/
-  );
+
 });
 
 test("autoload wait stops after its deadline", async () => {
@@ -105,60 +102,63 @@ test("autoload wait stops after its deadline", async () => {
   assert.ok(timerCalls > 1 && timerCalls < 100);
 });
 
-test("autoload applies integrity metadata to the external script", async () => {
-  const injectedSource = getInjectedSource();
-  const listeners = new Map();
-  let appendedScript = null;
-  let loggedError = null;
-  const externalScript = {
-    addEventListener(type, listener) {
-      listeners.set(type, listener);
+test("a failed library is reported and later libraries still load in order", async () => {
+  const libs = [
+    { url: "https://example.test/first.js" },
+    { url: "https://example.test/second.js" }
+  ];
+  const source = getInjectedSource().replace(/const libs = .*\n/, `const libs = ${JSON.stringify(libs)}\n`);
+  const loaded = [];
+  const errors = [];
+  const window = { loadScript() {}, addEventListener() {}, removeEventListener() {} };
+  const document = {
+    createElement() {
+      const listeners = new Map();
+      return {
+        addEventListener(type, listener) { listeners.set(type, listener); },
+        removeEventListener(type) { listeners.delete(type); },
+        remove() {},
+        dispatch(type) { listeners.get(type)(); }
+      };
     },
-    removeEventListener(type) {
-      listeners.delete(type);
-    },
-    remove() {}
-  };
-  const window = {
-    loadScript() {},
-    addEventListener() {},
-    removeEventListener() {}
-  };
-  const result = vm.runInNewContext(injectedSource, {
-    AbortController,
-    Date,
-    Promise,
-    clearTimeout() {},
-    console: {
-      error(_prefix, error) {
-        loggedError = error;
+    head: {
+      appendChild(script) {
+        loaded.push(script.src);
+        script.dispatch(loaded.length === 1 ? "error" : "load");
       }
-    },
-    document: {
-      createElement(tagName) {
-        assert.equal(tagName, "script");
-        return externalScript;
-      },
-      head: {
-        appendChild(script) {
-          appendedScript = script;
-          const onLoad = listeners.get("load");
-          assert.ok(onLoad);
-          onLoad();
-        }
-      }
-    },
-    setTimeout() {
-      return 1;
-    },
-    window
+    }
+  };
+
+  await vm.runInNewContext(source, {
+    AbortController, Date, Promise, document, window,
+    console: { error(_prefix, error) { errors.push(error.message); } },
+    setTimeout() { return 1; }, clearTimeout() {}
   });
 
-  await result;
+  assert.deepEqual(loaded, libs.map((lib) => lib.url));
+  assert.equal(errors.length, 1);
+  assert.match(errors[0], /first\.js/);
+});
 
-  assert.equal(loggedError, null);
-  assert.equal(appendedScript.crossOrigin, "anonymous");
-  assert.equal(appendedScript.referrerPolicy, "no-referrer");
-  assert.match(appendedScript.integrity, /^sha384-/);
-  assert.match(appendedScript.src, /@a0a2898b2a4048ae78b671a006f1fbd64c92a9ee\//);
+test("a configured library loads without requiring CORS", async () => {
+  const source = getInjectedSource().replace(/const libs = .*\n/, 'const libs = [{"url":"https://example.test/library.js"}]\n');
+  let appendedScript;
+  const window = { loadScript() {}, addEventListener() {}, removeEventListener() {} };
+  const document = {
+    createElement() {
+      const listeners = new Map();
+      return {
+        addEventListener(type, listener) { listeners.set(type, listener); },
+        removeEventListener(type) { listeners.delete(type); },
+        dispatch(type) { listeners.get(type)(); }
+      };
+    },
+    head: { appendChild(script) { appendedScript = script; script.dispatch("load"); } }
+  };
+  await vm.runInNewContext(source, {
+    AbortController, Date, Promise, document, window, console,
+    setTimeout() { return 1; }, clearTimeout() {}
+  });
+  assert.equal(appendedScript.src, "https://example.test/library.js");
+  assert.equal(appendedScript.crossOrigin, undefined);
 });

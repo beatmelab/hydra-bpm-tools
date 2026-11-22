@@ -22,9 +22,8 @@
   const libs = [
     {
       url: "https://cdn.statically.io/gl/metagrowing/extra-shaders-for-hydra@a0a2898b2a4048ae78b671a006f1fbd64c92a9ee/lib/all.js",
-      integrity: "sha384-v7omXa4zRjQoJx15yVcvOJxH+xDd0T7y6Ni/ZDwXCS7PIVGh4OqZ4g+2AbXxIMJR",
     }, // doc: https://gitlab.com/metagrowing/extra-shaders-for-hydra
-    //{ url: "https://another-url.com/lib.js", integrity: "sha256-..." },
+    // { url: "https://another-url.com/lib.js" },
   ]
   const hydraReadyTimeoutMs = 15_000
   const libraryLoadTimeoutMs = 30_000
@@ -86,7 +85,7 @@
         }
       }
 
-      const loadLibrary = ({ url, integrity }) => new Promise((resolve, reject) => {
+      const loadLibrary = ({ url }) => new Promise((resolve, reject) => {
         if (signal.aborted) {
           reject(createAbortError())
           return
@@ -115,12 +114,10 @@
         const onAbort = () => finish(createAbortError())
         const onLoad = () => finish()
         const onError = () => finish(
-          new Error(\`Failed integrity check or load for external Hydra library: \${url}\`)
+          new Error(\`Failed to load external Hydra library: \${url}\`)
         )
 
         script.src = url
-        script.integrity = integrity
-        script.crossOrigin = "anonymous"
         script.referrerPolicy = "no-referrer"
         script.addEventListener("load", onLoad, { once: true })
         script.addEventListener("error", onError, { once: true })
@@ -133,7 +130,12 @@
       try {
         await waitForHydra()
         for (const lib of libs) {
-          await loadLibrary(lib)
+          try {
+            await loadLibrary(lib)
+          } catch (error) {
+            if (error.name === "AbortError") throw error
+            console.error("[Hydra autoload libs]", error)
+          }
         }
       } catch (error) {
         if (error.name !== "AbortError") {

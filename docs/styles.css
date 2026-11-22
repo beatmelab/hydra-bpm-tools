@@ -296,7 +296,6 @@ h3 {
 .section-head p,
 .feature-card p,
 .value-card p,
-.userscript-card,
 .source-card p,
 .api-card p {
   color: var(--text-muted);
@@ -523,7 +522,6 @@ h3 {
 
 .feature-card,
 .value-card,
-.userscript-card,
 .api-card,
 .code-card {
   padding: 1.25rem;
@@ -556,12 +554,6 @@ h3 {
   stroke-width: 1.5;
   stroke-linecap: square;
   stroke-linejoin: miter;
-}
-
-.feature-icon-userscript svg {
-  stroke-width: 1.65;
-  stroke-linecap: round;
-  stroke-linejoin: round;
 }
 
 .feature-body h3 {
@@ -764,7 +756,6 @@ kbd {
   background: #0a0a0a;
 }
 
-.userscript-layout,
 .source-layout {
   display: grid;
   grid-template-columns: minmax(0, 0.85fr) minmax(0, 1.15fr);
@@ -847,7 +838,6 @@ button:focus-visible {
 
 @media (max-width: 1080px) {
   .hero-layout,
-  .userscript-layout,
   .source-layout {
     grid-template-columns: 1fr;
   }

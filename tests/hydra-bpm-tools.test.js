@@ -74,6 +74,7 @@ function createStorage(initial = {}) {
 }
 
 function createHarness(options = {}) {
+  let nowMs = 0;
   const body = new FakeElement("body");
   const codeMirror = options.evaluate
     ? { CodeMirror: { getValue: () => "testSketch()" } }
@@ -87,7 +88,6 @@ function createHarness(options = {}) {
     querySelector: (selector) => selector === ".CodeMirror" ? codeMirror : null
   };
   const windowListeners = new Map();
-  const sessionStorage = createStorage(options.sessionStorage);
   const localStorage = createStorage();
   const hydra = {
     bpm: 120,
@@ -104,7 +104,6 @@ function createHarness(options = {}) {
     innerHeight: 720,
     bpm: 120,
     hydraSynth: { synth: hydra },
-    __hydraBpmToolsMode: options.userscript ? "userscript" : undefined,
     addEventListener(type, listener) {
       const listeners = windowListeners.get(type) || [];
       listeners.push(listener);
@@ -124,9 +123,8 @@ function createHarness(options = {}) {
     console: silentConsole,
     document,
     localStorage,
-    performance: { now: () => 0 },
+    performance: { now: () => nowMs },
     requestAnimationFrame() {},
-    sessionStorage,
     setInterval(callback) {
       callback();
       return 1;
@@ -139,7 +137,14 @@ function createHarness(options = {}) {
 
   vm.runInNewContext(librarySource, context, { filename: "hydra-bpm-tools.lib.js" });
 
-  return { body, hydra, sessionStorage, window };
+  return {
+    body,
+    hydra,
+    window,
+    setNow(value) {
+      nowMs = value;
+    }
+  };
 }
 
 function deferred() {
@@ -150,15 +155,35 @@ function deferred() {
   return { promise, resolve };
 }
 
-function dispatchCtrlShiftEnter(window) {
-  window.dispatchEvent({
+function dispatchKeyDown(window, code, options = {}) {
+  const event = {
     type: "keydown",
-    code: "Enter",
-    ctrlKey: true,
-    shiftKey: true,
+    code,
+    ctrlKey: false,
+    shiftKey: false,
     altKey: false,
-    metaKey: false
-  });
+    metaKey: false,
+    repeat: false,
+    defaultPrevented: false,
+    propagationStopped: false,
+    immediatePropagationStopped: false,
+    preventDefault() {
+      this.defaultPrevented = true;
+    },
+    stopPropagation() {
+      this.propagationStopped = true;
+    },
+    stopImmediatePropagation() {
+      this.immediatePropagationStopped = true;
+    },
+    ...options
+  };
+  window.dispatchEvent(event);
+  return event;
+}
+
+function dispatchCtrlShiftEnter(window) {
+  return dispatchKeyDown(window, "Enter", { ctrlKey: true, shiftKey: true });
 }
 
 async function flushMicrotasksUntil(predicate) {
@@ -167,6 +192,94 @@ async function flushMicrotasksUntil(predicate) {
   }
   assert.ok(predicate(), "expected asynchronous operation did not start");
 }
+
+{
+  for (const code of ["Space", "KeyT"]) {
+    test(`Ctrl+Shift+${code} taps tempo and consumes the shortcut`, () => {
+      const { window, setNow } = createHarness();
+
+      for (const now of [1000, 2000, 3000, 4000]) {
+        setNow(now);
+        const event = dispatchKeyDown(window, code, { ctrlKey: true, shiftKey: true });
+        assert.equal(event.defaultPrevented, true);
+        assert.equal(event.propagationStopped, true);
+        assert.equal(event.immediatePropagationStopped, true);
+      }
+
+      assert.equal(window.hydraBpmTools.getBpm(), 60);
+      assert.equal(window.hydraBpmTools.getEffectiveBpm(), 60);
+    });
+  }
+
+  test(`Space and T share one tap sequence`, () => {
+    const { window, setNow } = createHarness();
+
+    for (const [index, code] of ["Space", "KeyT", "Space", "KeyT"].entries()) {
+      setNow(1000 + index * 1000);
+      dispatchKeyDown(window, code, { ctrlKey: true, shiftKey: true });
+    }
+
+    assert.equal(window.hydraBpmTools.getBpm(), 60);
+  });
+}
+
+for (const code of ["Space", "KeyT"]) {
+  test(`holding Ctrl+Shift+${code} consumes repeats without adding taps`, () => {
+    const { window, setNow } = createHarness();
+
+    setNow(1000);
+    dispatchKeyDown(window, code, { ctrlKey: true, shiftKey: true });
+
+    for (const now of [1200, 1400, 1600, 1800]) {
+      setNow(now);
+      const event = dispatchKeyDown(window, code, {
+        ctrlKey: true,
+        shiftKey: true,
+        repeat: true
+      });
+      assert.equal(event.defaultPrevented, true);
+      assert.equal(event.propagationStopped, true);
+      assert.equal(event.immediatePropagationStopped, true);
+    }
+
+    assert.equal(window.hydraBpmTools.getBpm(), 120);
+
+    for (const now of [2000, 3000, 4000]) {
+      setNow(now);
+      dispatchKeyDown(window, code, { ctrlKey: true, shiftKey: true });
+    }
+
+    assert.equal(window.hydraBpmTools.getBpm(), 60);
+  });
+}
+
+test("Space requires exactly Ctrl+Shift and leaves other combinations untouched", () => {
+  const { window, setNow } = createHarness();
+  let nowMs = 1000;
+
+  for (const ctrlKey of [false, true]) {
+    for (const shiftKey of [false, true]) {
+      for (const altKey of [false, true]) {
+        for (const metaKey of [false, true]) {
+          if (ctrlKey && shiftKey && !altKey && !metaKey) continue;
+
+          for (let tap = 0; tap < 4; tap += 1) {
+            setNow(nowMs);
+            nowMs += 1000;
+            const event = dispatchKeyDown(window, "Space", {
+              ctrlKey, shiftKey, altKey, metaKey
+            });
+            assert.equal(event.defaultPrevented, false);
+            assert.equal(event.propagationStopped, false);
+            assert.equal(event.immediatePropagationStopped, false);
+          }
+
+          assert.equal(window.hydraBpmTools.getBpm(), 120);
+        }
+      }
+    }
+  }
+});
 
 test("beats ramps down while beats_ ramps up over a beat", () => {
   const { hydra, window } = createHarness();
@@ -213,11 +326,8 @@ test("beatsTri follows the documented down-up triangle and beatsTri_ is inverted
   assert.equal(upDown(), 0);
 });
 
-test("setBpm and setRate accept finite numeric strings and persist normalized values", () => {
-  const { hydra, sessionStorage, window } = createHarness({
-    userscript: true,
-    referrer: "https://hydra.ojack.xyz/"
-  });
+test("setBpm and setRate accept finite numeric strings", () => {
+  const { hydra, window } = createHarness();
 
   window.hydraBpmTools.setBpm("140");
   window.hydraBpmTools.setRate("0.5");
@@ -227,15 +337,10 @@ test("setBpm and setRate accept finite numeric strings and persist normalized va
   assert.equal(window.hydraBpmTools.getEffectiveBpm(), 70);
   assert.equal(window.bpm, 70);
   assert.equal(hydra.bpm, 70);
-  assert.equal(sessionStorage.getItem("hydra-bpmtools-bpm"), "140");
-  assert.equal(sessionStorage.getItem("hydra-bpmtools-rate"), "0.5");
 });
 
 test("setBpm and setRate reject invalid values without throwing or mutating state", () => {
-  const { hydra, sessionStorage, window } = createHarness({
-    userscript: true,
-    referrer: "https://hydra.ojack.xyz/"
-  });
+  const { hydra, window } = createHarness();
   const invalidValues = [
     "not-a-number",
     "",
@@ -263,33 +368,6 @@ test("setBpm and setRate reject invalid values without throwing or mutating stat
   assert.equal(window.hydraBpmTools.getEffectiveBpm(), 70);
   assert.equal(window.bpm, 70);
   assert.equal(hydra.bpm, 70);
-  assert.equal(sessionStorage.getItem("hydra-bpmtools-bpm"), "140");
-  assert.equal(sessionStorage.getItem("hydra-bpmtools-rate"), "0.5");
-});
-
-test("corrupt userscript session values fall back to BPM 120 and rate 1", () => {
-  const corruptValues = [
-    ["NaN", "not-a-rate"],
-    ["140junk", "0.6"],
-    ["", "Infinity"]
-  ];
-
-  for (const [storedBpm, storedRate] of corruptValues) {
-    const { hydra, window } = createHarness({
-      userscript: true,
-      referrer: "https://hydra.ojack.xyz/",
-      sessionStorage: {
-        "hydra-bpmtools-bpm": storedBpm,
-        "hydra-bpmtools-rate": storedRate
-      }
-    });
-
-    assert.equal(window.hydraBpmTools.getBpm(), 120);
-    assert.equal(window.hydraBpmTools.getRate(), 1);
-    assert.equal(window.hydraBpmTools.getEffectiveBpm(), 120);
-    assert.equal(window.bpm, 120);
-    assert.equal(hydra.bpm, 120);
-  }
 });
 
 test("hush blanks immediately and unhush restores through evaluation", async () => {

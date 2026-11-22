@@ -8,7 +8,7 @@
     <title>Hydra BPM Tools by BeatMe Lab — Tap Tempo and Beat Sync for Hydra</title>
     <meta
       name="description"
-      content="Hydra BPM Tools is an open-source timing utility for Hydra. It provides a draggable BPM HUD, tap tempo, resync, keyboard shortcuts, userscript support, and BPM-synced helper functions."
+      content="Hydra BPM Tools is an open-source timing utility for Hydra. It provides a draggable BPM HUD, tap tempo, resync, keyboard shortcuts, and BPM-synced helper functions."
     />
     <meta name="theme-color" content="#0a0a0a" />
 
@@ -41,7 +41,7 @@
         "@context": "https://schema.org",
         "@type": "SoftwareSourceCode",
         "name": "Hydra BPM Tools",
-        "description": "A minimal BPM HUD and beat tools utility for Hydra live coding with tap tempo, resync, keyboard shortcuts, userscript support, and beat-synced helpers.",
+        "description": "A minimal BPM HUD and beat tools utility for Hydra live coding with tap tempo, resync, keyboard shortcuts, and beat-synced helpers.",
         "codeRepository": "https://github.com/beatmelab/hydra-bpm-tools",
         "license": "https://www.gnu.org/licenses/gpl-3.0.html",
         "url": "https://hydra-bpm-tools.beatmelab.com/",
@@ -57,7 +57,6 @@
           "BeatMe Lab Hydra BPM Tools",
           "Hydra live coding BPM tool",
           "tap tempo for Hydra",
-          "Hydra userscript",
           "beat sync for Hydra",
           "VJ BPM tool for Hydra",
           "Hydra beat tools",
@@ -317,7 +316,6 @@
           <a href="#shortcuts">Shortcuts</a>
           <a href="#envelopes">Envelopes</a>
           <a href="#api">API</a>
-          <a href="#userscript">Userscript</a>
         </nav>
       </div>
     </header>
@@ -552,19 +550,6 @@
                 <p>Lets you halve or double timing quickly while keeping the underlying BPM available.</p>
               </div>
             </article>
-            <article class="feature-card">
-              <span class="feature-icon feature-icon-userscript" aria-hidden="true">
-                <svg viewBox="0 0 24 24" focusable="false">
-                  <path d="M8.5 7 4.5 12l4 5"></path>
-                  <path d="M15.5 7 19.5 12l-4 5"></path>
-                  <path d="M13.2 4.5 10.8 19.5"></path>
-                </svg>
-              </span>
-              <div class="feature-body">
-                <h3>Userscript auto-load</h3>
-                <p>Can be <a href="#userscript">installed as a userscript</a> so the tool loads automatically each time the Hydra editor opens.</p>
-              </div>
-            </article>
           </div>
         </div>
       </section>
@@ -612,7 +597,7 @@
                     Copy
                   </button>
                 </div>
-                <pre><code id="code-jsdelivr">await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.2.3/hydra-bpm-tools.lib.js")</code></pre>
+                <pre><code id="code-jsdelivr">await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.2.4/hydra-bpm-tools.lib.js")</code></pre>
               </div>
             </details>
 
@@ -646,7 +631,7 @@
               </thead>
               <tbody>
                 <tr>
-                  <td><kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>T</kbd></td>
+                  <td><kbd>Ctrl</kbd><span>+</span><kbd>Shift</kbd><span>+</span><kbd>Space</kbd></td>
                   <td>Tap tempo</td>
                 </tr>
                 <tr>
@@ -684,6 +669,12 @@
               </tbody>
             </table>
           </div>
+          <p>
+            Use <code>Ctrl+Shift+Space</code> for tap tempo on all systems. Tap at least three times;
+            holding the key does not add extra taps. A pause longer than two seconds starts a new tap sequence.
+            <code>Ctrl+Shift+T</code> remains a legacy alias where the browser allows it, but browsers may
+            intercept it to reopen closed tabs, especially on Windows.
+          </p>
         </div>
       </section>
 
@@ -800,44 +791,6 @@
                 The same BPM used for control can also drive modulation through the envelope helpers.
               </p>
             </article>
-          </div>
-        </div>
-      </section>
-
-      <section class="section" id="userscript">
-        <div class="shell userscript-layout">
-          <div class="section-head compact">
-            <p class="eyebrow">Userscript</p>
-            <h2>Load automatically with a userscript</h2>
-            <p>
-              The userscript loads the same controls and helper functions whenever the Hydra editor opens.
-              It also stores valid base BPM and rate values in <code>sessionStorage</code> and restores them when the new page reports another Hydra page as its referrer. A direct visit starts at BPM 120 and rate 1.
-            </p>
-            <p>
-              HUD position, visibility, and minimal mode are stored in <code>localStorage</code> in both installation modes.
-            </p>
-          </div>
-
-          <div class="userscript-card">
-            <ol class="steps">
-              <li>Install a userscript manager (such as
-              <a href="https://www.tampermonkey.net/" target="_blank" rel="noopener noreferrer">
-                Tampermonkey
-              </a>
-              or
-              <a href="https://violentmonkey.github.io/" target="_blank" rel="noopener noreferrer">
-                Violentmonkey
-              </a>) in your favorite browser.</li>
-              <li>Click the "Install Userscript" button. Your userscript manager will handle the installation.</li>
-            </ol>
-            <a
-              class="button button-secondary"
-              href="https://raw.githubusercontent.com/beatmelab/hydra-bpm-tools/main/hydra-bpm-tools.user.js"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Install Userscript
-            </a>
           </div>
         </div>
       </section>
