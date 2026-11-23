@@ -25,7 +25,7 @@ You get:
 <summary>Direct jsDelivr URL</summary>
 
 ```js
-await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.2.4/hydra-bpm-tools.lib.js")
+await loadScript("https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.2.5/hydra-bpm-tools.lib.js")
 ```
 
 </details>
@@ -124,7 +124,7 @@ The optional [Hydra autoload libs](extras/hydra-autoload-libs.user.js) userscrip
 3. Edit the script's `libs` array in the manager. The example loads Extra Shaders for Hydra; to load BPM Tools too, add:
 
 ```js
-{ url: "https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.2.4/hydra-bpm-tools.lib.js" },
+{ url: "https://cdn.jsdelivr.net/gh/beatmelab/hydra-bpm-tools@v2.2.5/hydra-bpm-tools.lib.js" },
 ```
 
 The autoload script has automatic updates disabled to preserve your library list.

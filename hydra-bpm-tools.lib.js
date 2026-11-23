@@ -1,6 +1,6 @@
 /*
 Hydra BPM Tools
-Version: 2.2.4
+Version: 2.2.5
 https://github.com/beatmelab/hydra-bpm-tools
 
 Usage in Hydra editor:
